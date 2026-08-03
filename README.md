@@ -11,24 +11,51 @@ A shared weekly planner for the whole family:
 ## Tech stack
 
 - [Next.js](https://nextjs.org) (App Router) + TypeScript
-- SQLite via [Prisma](https://www.prisma.io) — a single database file, no separate
-  database server to run
+- Postgres via [Prisma](https://www.prisma.io)
 - Tailwind CSS
 - Custom cookie-based session auth (signed with [`jose`](https://github.com/panva/jose),
   passwords hashed with `bcryptjs`) — no third-party auth service required
 
-## Getting started
+## Deploy it for free (recommended — no local install needed)
+
+This is the easiest way to get a URL you can open from any device's browser,
+with no Node install and nothing running on your own computer:
+
+1. **Create a free Postgres database.** Sign up at
+   [neon.com](https://neon.com) or [supabase.com](https://supabase.com) (both
+   have a free tier, no credit card) and create a new project. Copy its
+   connection string (it looks like `postgresql://user:password@host/dbname`).
+2. **Deploy to Vercel.** Sign up at [vercel.com](https://vercel.com) (GitHub
+   login works, no credit card), click **Add New → Project**, and import this
+   GitHub repository.
+3. Before the first deploy, open the project's **Environment Variables**
+   settings and add:
+   - `DATABASE_URL` — the connection string from step 1
+   - `SESSION_SECRET` — any long random string (e.g. run `openssl rand -base64 32`
+     locally, or use a password generator)
+   - `COOKIE_SECURE` — `true` (Vercel serves everything over HTTPS)
+4. Click **Deploy**. Vercel installs dependencies, applies the database schema
+   (`prisma migrate deploy` runs as part of the build), and gives you a URL
+   like `https://your-app.vercel.app`.
+5. Open that URL on any device — phone, iPad, laptop, the kitchen TV — and
+   you'll land on the setup page to create the first admin account.
+
+Every time new commits land on this branch/PR, Vercel redeploys automatically.
+
+## Running it locally instead
 
 ```bash
 npm install
-cp .env.example .env        # then edit SESSION_SECRET (see below)
-npx prisma migrate deploy   # creates dev.db and applies the schema
+cp .env.example .env   # then fill in DATABASE_URL and SESSION_SECRET
+npx prisma migrate deploy
 npm run dev
 ```
 
-Open http://localhost:3000 — since there are no users yet, you'll land on a setup
-page to create the first admin account. From there, sign in and go to **Admin** to
-add the rest of the family.
+`DATABASE_URL` needs to point at a real Postgres database — either one you run
+yourself, or the same free Neon/Supabase database from above. Open
+http://localhost:3000 — since there are no users yet, you'll land on a setup
+page to create the first admin account. From there, sign in and go to **Admin**
+to add the rest of the family.
 
 ### Generating a real `SESSION_SECRET`
 
@@ -54,16 +81,12 @@ in development.
   sign-in, treat the link like a password — only open it on your home network, and
   regenerate/remove it from Admin if you ever think it's leaked.
 
-## Deployment
+## Self-hosting instead of Vercel
 
-This app needs a persistent filesystem for the SQLite database file (`dev.db`), so
-it's a better fit for **always-on hosting** than typical serverless platforms:
-
-- A home server, NAS, or Raspberry Pi on your home network (simplest — the TV and
-  everyone's phones are already on the same network).
-- Any VPS (a small droplet/instance is plenty for a family's worth of data).
-
-Typical production run:
+You can also run this on your own always-on machine (a home server, NAS, or
+Raspberry Pi, or any VPS) instead of Vercel — the app itself doesn't care, it
+just needs a `DATABASE_URL` pointing at a reachable Postgres (self-hosted or
+still a free Neon/Supabase one):
 
 ```bash
 npm install
@@ -72,21 +95,14 @@ npm run build
 npm start        # serves on port 3000 by default; use -p to change it
 ```
 
-Set real environment variables (`DATABASE_URL`, `SESSION_SECRET`) rather than
-relying on `.env` in production. By default the app assumes plain HTTP, which
-is right for a typical home-LAN setup (the TV and phones just hit
-`http://<local-ip>:3000`). If you put it behind HTTPS (a reverse proxy, or a
-public deployment), set `COOKIE_SECURE=true` — otherwise login cookies won't
-be marked secure even though they're sent over TLS.
+Set real environment variables (`DATABASE_URL`, `SESSION_SECRET`, `COOKIE_SECURE`)
+rather than relying on `.env` in production. Leave `COOKIE_SECURE=false` for a
+plain-http home-LAN setup (the TV and phones just hit `http://<local-ip>:3000`);
+set it to `true` only if this is reachable over HTTPS.
 
 To find the local network address to use on the TV and phones, check your
 server/computer's LAN IP (e.g. `ipconfig getifaddr en0` on macOS, `hostname -I`
 on Linux) and browse to `http://<that-ip>:3000`.
-
-If you'd rather deploy to a serverless platform (e.g. Vercel), swap the SQLite
-datasource for a hosted Postgres database — the Prisma schema
-(`prisma/schema.prisma`) would need its `datasource` provider and the query
-adapter in `src/lib/db.ts` updated accordingly.
 
 ## Project structure
 
