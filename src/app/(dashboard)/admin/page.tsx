@@ -1,0 +1,114 @@
+import { headers } from "next/headers";
+import { requireAdmin } from "@/lib/auth";
+import { prisma } from "@/lib/db";
+import { AddMemberForm } from "@/components/admin/AddMemberForm";
+import { ResetPasswordButton } from "@/components/admin/ResetPasswordButton";
+import { RemoveMemberButton } from "@/components/admin/RemoveMemberButton";
+import { DeleteDisplayLinkButton } from "@/components/admin/DeleteDisplayLinkButton";
+import { createDisplayLink } from "./actions";
+
+export default async function AdminPage() {
+  const admin = await requireAdmin();
+
+  const [members, displayTokens, headersList] = await Promise.all([
+    prisma.user.findMany({ orderBy: { createdAt: "asc" } }),
+    prisma.displayToken.findMany({ orderBy: { createdAt: "asc" } }),
+    headers(),
+  ]);
+
+  const host = headersList.get("host") ?? "localhost:3000";
+  const protocol =
+    headersList.get("x-forwarded-proto") ??
+    (process.env.COOKIE_SECURE === "true" ? "https" : "http");
+
+  return (
+    <div className="flex flex-col gap-10">
+      <div>
+        <h1 className="text-xl font-semibold text-zinc-900 dark:text-zinc-50">
+          Family members
+        </h1>
+        <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+          Admins can add events to anyone&apos;s calendar and manage the family.
+        </p>
+
+        <div className="mt-4 flex flex-col gap-3">
+          {members.map((member) => (
+            <div
+              key={member.id}
+              className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-zinc-200 p-4 dark:border-zinc-800"
+            >
+              <div className="flex items-center gap-3">
+                <span
+                  className="h-3 w-3 rounded-full"
+                  style={{ backgroundColor: member.color }}
+                />
+                <div>
+                  <p className="font-medium text-zinc-900 dark:text-zinc-50">
+                    {member.name}{" "}
+                    {member.role === "ADMIN" && (
+                      <span className="ml-1 rounded bg-indigo-100 px-1.5 py-0.5 text-xs font-semibold text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300">
+                        Admin
+                      </span>
+                    )}
+                  </p>
+                  <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                    {member.email}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-4">
+                <ResetPasswordButton userId={member.id} userName={member.name} />
+                {member.id !== admin.id && (
+                  <RemoveMemberButton userId={member.id} userName={member.name} />
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-4">
+          <AddMemberForm />
+        </div>
+      </div>
+
+      <div>
+        <h1 className="text-xl font-semibold text-zinc-900 dark:text-zinc-50">
+          Kitchen TV display
+        </h1>
+        <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+          Open this link once in the Samsung TV&apos;s web browser and leave it
+          open — it shows everyone&apos;s week and refreshes automatically. No
+          sign-in required, so only share it on your home network.
+        </p>
+
+        <div className="mt-4 flex flex-col gap-3">
+          {displayTokens.map((dt) => (
+            <div
+              key={dt.id}
+              className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-zinc-200 p-4 dark:border-zinc-800"
+            >
+              <code className="break-all text-sm text-zinc-700 dark:text-zinc-300">
+                {protocol}://{host}/tv/{dt.token}
+              </code>
+              <DeleteDisplayLinkButton id={dt.id} />
+            </div>
+          ))}
+          {displayTokens.length === 0 && (
+            <p className="text-sm text-zinc-500 dark:text-zinc-400">
+              No display link yet.
+            </p>
+          )}
+        </div>
+
+        <form action={createDisplayLink} className="mt-4">
+          <button
+            type="submit"
+            className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white"
+          >
+            + Generate TV link
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
