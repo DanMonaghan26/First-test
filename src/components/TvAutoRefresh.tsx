@@ -8,17 +8,21 @@ import { useEffect } from "react";
 // over to the next day, or recover if a poll is ever missed).
 export function TvAutoRefresh({
   token,
+  day,
   pollMs = 8_000,
   fallbackMs = 5 * 60_000,
 }: {
   token?: string;
+  day?: string;
   pollMs?: number;
   fallbackMs?: number;
 }) {
   useEffect(() => {
     let lastVersion: string | null = null;
     let cancelled = false;
-    const versionUrl = token ? `/api/tv/${token}/version` : "/api/today-version";
+    const versionUrl = token
+      ? `/api/tv/${token}/version${day ? `?day=${day}` : ""}`
+      : "/api/today-version";
 
     async function poll() {
       try {
@@ -45,7 +49,7 @@ export function TvAutoRefresh({
       clearInterval(pollId);
       clearInterval(fallbackId);
     };
-  }, [token, pollMs, fallbackMs]);
+  }, [token, day, pollMs, fallbackMs]);
 
   return null;
 }

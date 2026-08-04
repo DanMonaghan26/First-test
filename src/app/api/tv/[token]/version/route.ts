@@ -5,10 +5,10 @@ import { computeTodayVersion } from "@/lib/today-version";
 export const dynamic = "force-dynamic";
 
 // Polled by the TV kiosk page every few seconds so it can force a reload as
-// soon as today's events (or the family member list) actually change,
-// instead of waiting for the next timed refresh.
+// soon as the displayed day's events (or the family member list) actually
+// change, instead of waiting for the next timed refresh.
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ token: string }> }
 ) {
   const { token } = await params;
@@ -18,6 +18,7 @@ export async function GET(
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  const version = await computeTodayVersion();
+  const day = new URL(request.url).searchParams.get("day") ?? undefined;
+  const version = await computeTodayVersion(day);
   return NextResponse.json({ version });
 }
