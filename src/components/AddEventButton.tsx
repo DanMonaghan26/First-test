@@ -212,7 +212,7 @@ export function AddEventButton({
                 <option value="NONE">Doesn&apos;t repeat</option>
                 <option value="DAILY">Daily</option>
                 <option value="WEEKLY">Weekly, same day</option>
-                <option value="CUSTOM_DAYS">Certain days of the week</option>
+                <option value="CUSTOM_DAYS">Certain days, every week</option>
                 <option value="SET_DATES">Multiple set dates</option>
               </select>
             </div>
@@ -233,6 +233,11 @@ export function AddEventButton({
                     </label>
                   ))}
                 </div>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                  This repeats every week on the days you pick, with no end date unless you
+                  set one below — for just one week, use &quot;Repeat until&quot; to stop it
+                  after this week.
+                </p>
               </div>
             )}
 
@@ -242,6 +247,9 @@ export function AddEventButton({
                   Repeat until (optional)
                 </label>
                 <input type="date" name="repeatUntil" min={date} className={inputClass} />
+                <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                  Leave blank to repeat forever, with no end date.
+                </p>
               </div>
             )}
 
