@@ -24,7 +24,11 @@ export default async function DashboardLayout({
         displayMode={displayMode}
       />
       <main className="mx-auto w-full max-w-4xl flex-1 px-4 py-6">
-        {displayMode ? <DisplayModeView /> : children}
+        {displayMode ? (
+          <DisplayModeView currentUser={{ id: user.id, role: user.role }} />
+        ) : (
+          children
+        )}
       </main>
     </div>
   );

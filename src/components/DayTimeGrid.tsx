@@ -43,10 +43,12 @@ export function DayTimeGrid({
   day,
   members,
   currentUser,
+  readOnly = false,
 }: {
   day: DayBucket;
   members: Member[];
   currentUser: { id: string; role: "ADMIN" | "MEMBER" };
+  readOnly?: boolean;
 }) {
   const { startHour, endHour } = computeRange(day.events);
   const totalHours = endHour - startHour;
@@ -66,7 +68,7 @@ export function DayTimeGrid({
         <div className="flex border-b border-zinc-200 dark:border-zinc-800">
           <div className="w-12 flex-shrink-0" />
           {members.map((member) => {
-            const canAdd = currentUser.role === "ADMIN" || member.id === currentUser.id;
+            const canAdd = !readOnly && (currentUser.role === "ADMIN" || member.id === currentUser.id);
             return (
               <div
                 key={member.id}
@@ -104,7 +106,7 @@ export function DayTimeGrid({
               const memberReminders = day.events.filter(
                 (e) => e.ownerId === member.id && e.isReminder
               );
-              const canEdit = currentUser.role === "ADMIN" || member.id === currentUser.id;
+              const canEdit = !readOnly && (currentUser.role === "ADMIN" || member.id === currentUser.id);
               return (
                 <div
                   key={member.id}
@@ -144,7 +146,7 @@ export function DayTimeGrid({
               (e) => e.ownerId === member.id && !e.isReminder
             );
             const canEdit = (ownerId: string) =>
-              currentUser.role === "ADMIN" || ownerId === currentUser.id;
+              !readOnly && (currentUser.role === "ADMIN" || ownerId === currentUser.id);
 
             return (
               <div
