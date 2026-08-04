@@ -8,10 +8,12 @@ export function NavBar({
   name,
   role,
   undo,
+  displayMode,
 }: {
   name: string;
   role: "ADMIN" | "MEMBER";
   undo: { title: string; count: number } | null;
+  displayMode: boolean;
 }) {
   const links = [
     { href: "/subscriptions", label: "Subscriptions" },
@@ -37,19 +39,23 @@ export function NavBar({
           Monaghan Family Planner
         </Link>
         <div className="flex items-center gap-3">
-          <SearchBox />
-          <span className="hidden text-sm text-zinc-600 dark:text-zinc-400 sm:inline">
-            {name}
-          </span>
-          <form action={logout}>
-            <button
-              type="submit"
-              className="rounded-lg border border-zinc-300 px-3 py-1.5 text-sm font-medium text-zinc-700 hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-900"
-            >
-              Sign out
-            </button>
-          </form>
-          <BurgerMenu links={links} undo={undo} />
+          {!displayMode && (
+            <>
+              <SearchBox />
+              <span className="hidden text-sm text-zinc-600 dark:text-zinc-400 sm:inline">
+                {name}
+              </span>
+              <form action={logout}>
+                <button
+                  type="submit"
+                  className="rounded-lg border border-zinc-300 px-3 py-1.5 text-sm font-medium text-zinc-700 hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-900"
+                >
+                  Sign out
+                </button>
+              </form>
+            </>
+          )}
+          <BurgerMenu links={links} undo={undo} displayMode={displayMode} />
         </div>
       </div>
     </header>

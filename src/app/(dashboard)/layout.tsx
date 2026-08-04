@@ -1,6 +1,8 @@
+import { cookies } from "next/headers";
 import { requireUser } from "@/lib/auth";
 import { getLastUndoableBatch } from "@/lib/family-events";
 import { NavBar } from "@/components/NavBar";
+import { DisplayModeView } from "@/components/DisplayModeView";
 
 export default async function DashboardLayout({
   children,
@@ -8,7 +10,10 @@ export default async function DashboardLayout({
   children: React.ReactNode;
 }) {
   const user = await requireUser();
-  const lastBatch = await getLastUndoableBatch(user.id);
+  const store = await cookies();
+  const displayMode = store.get("displayMode")?.value === "1";
+
+  const lastBatch = displayMode ? null : await getLastUndoableBatch(user.id);
 
   return (
     <div className="flex min-h-full flex-1 flex-col bg-zinc-50 dark:bg-black">
@@ -16,9 +21,10 @@ export default async function DashboardLayout({
         name={user.name}
         role={user.role}
         undo={lastBatch ? { title: lastBatch.title, count: lastBatch.count } : null}
+        displayMode={displayMode}
       />
       <main className="mx-auto w-full max-w-4xl flex-1 px-4 py-6">
-        {children}
+        {displayMode ? <DisplayModeView /> : children}
       </main>
     </div>
   );
