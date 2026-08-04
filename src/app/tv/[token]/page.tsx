@@ -62,8 +62,8 @@ export default async function TvDisplayPage({
                   className="rounded-lg border-l-4 bg-zinc-800 px-3 py-2"
                   style={{ borderColor: event.ownerColor }}
                 >
-                  <p className="text-lg font-medium text-zinc-50">{event.title}</p>
-                  <p className="text-sm text-zinc-400">
+                  <p className="break-words text-lg font-medium text-zinc-50">{event.title}</p>
+                  <p className="break-words text-sm text-zinc-400">
                     {event.startTime}
                     {event.endTime ? `–${event.endTime}` : ""} · {event.ownerName}
                   </p>

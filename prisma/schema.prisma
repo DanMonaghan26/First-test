@@ -12,6 +12,13 @@ enum Role {
   MEMBER
 }
 
+enum RecurrenceType {
+  NONE
+  DAILY
+  WEEKLY
+  CUSTOM_DAYS
+}
+
 model User {
   id           String   @id @default(cuid())
   name         String
@@ -34,6 +41,11 @@ model Event {
   endTime   String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  // Recurrence: date above is the series' first occurrence / anchor.
+  recurrenceType    RecurrenceType @default(NONE)
+  recurrenceDays    Int[]          @default([]) // 0=Sunday..6=Saturday, only used by CUSTOM_DAYS
+  recurrenceEndDate DateTime?
 
   owner   User   @relation("OwnedEvents", fields: [ownerId], references: [id], onDelete: Cascade)
   ownerId String

@@ -8,18 +8,24 @@ import { EventPill } from "@/components/EventPill";
 export default async function WeekPage({
   searchParams,
 }: {
-  searchParams: Promise<{ week?: string; mine?: string }>;
+  searchParams: Promise<{ week?: string; mine?: string; view?: string }>;
 }) {
   const user = await requireUser();
   const params = await searchParams;
 
   const weekStart = getWeekStart(params.week ?? null);
   const showMineOnly = params.mine === "1";
+  const showTodayOnly = params.view === "today";
 
-  const [members, buckets] = await Promise.all([
+  const [members, allBuckets] = await Promise.all([
     getFamilyMembers(),
     getWeekBuckets(weekStart),
   ]);
+
+  const todayKey = dateKey(new Date());
+  const buckets = showTodayOnly
+    ? allBuckets.filter((b) => b.key === todayKey)
+    : allBuckets;
 
   const prevWeekIso = dateKey(shiftWeek(weekStart, -1));
   const nextWeekIso = dateKey(shiftWeek(weekStart, 1));
@@ -31,9 +37,9 @@ export default async function WeekPage({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-semibold text-zinc-900 dark:text-zinc-50">
-            {formatWeekRangeLabel(weekStart)}
+            {showTodayOnly ? `Today – ${buckets[0]?.label ?? ""}` : formatWeekRangeLabel(weekStart)}
           </h1>
-          <div className="mt-1 flex gap-3 text-sm">
+          <div className="mt-1 flex flex-wrap gap-3 text-sm">
             <Link
               href={`/week?week=${prevWeekIso}${mineParam}`}
               className="text-indigo-600 hover:underline dark:text-indigo-400"
@@ -47,6 +53,16 @@ export default async function WeekPage({
               This week
             </Link>
             <Link
+              href={`/week?week=${todayIso}&view=today${mineParam}`}
+              className={
+                showTodayOnly
+                  ? "font-semibold text-indigo-600 underline dark:text-indigo-400"
+                  : "text-indigo-600 hover:underline dark:text-indigo-400"
+              }
+            >
+              Today only
+            </Link>
+            <Link
               href={`/week?week=${nextWeekIso}${mineParam}`}
               className="text-indigo-600 hover:underline dark:text-indigo-400"
             >
@@ -57,7 +73,7 @@ export default async function WeekPage({
 
         <div className="flex overflow-hidden rounded-lg border border-zinc-300 text-sm dark:border-zinc-700">
           <Link
-            href={`/week?week=${dateKey(weekStart)}`}
+            href={`/week?week=${dateKey(weekStart)}${showTodayOnly ? "&view=today" : ""}`}
             className={`px-3 py-1.5 font-medium ${
               !showMineOnly
                 ? "bg-indigo-600 text-white"
@@ -67,7 +83,7 @@ export default async function WeekPage({
             Everyone
           </Link>
           <Link
-            href={`/week?week=${dateKey(weekStart)}&mine=1`}
+            href={`/week?week=${dateKey(weekStart)}&mine=1${showTodayOnly ? "&view=today" : ""}`}
             className={`px-3 py-1.5 font-medium ${
               showMineOnly
                 ? "bg-indigo-600 text-white"
@@ -96,7 +112,13 @@ export default async function WeekPage({
         </div>
       )}
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-7">
+      <div
+        className={
+          showTodayOnly
+            ? "grid max-w-sm grid-cols-1 gap-4"
+            : "grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-7"
+        }
+      >
         {buckets.map((day) => {
           const dayEvents = showMineOnly
             ? day.events.filter((e) => e.ownerId === user.id)
@@ -115,7 +137,6 @@ export default async function WeekPage({
                   <EventPill
                     key={event.id}
                     event={event}
-                    dateIso={day.key}
                     dayLabel={day.label}
                     canEdit={user.role === "ADMIN" || event.ownerId === user.id}
                     showOwnerName={!showMineOnly}

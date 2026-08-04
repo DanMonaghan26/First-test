@@ -6,6 +6,19 @@ import { createEvent } from "@/app/(dashboard)/week/actions";
 
 type FamilyMember = { id: string; name: string; color: string };
 
+const WEEKDAYS = [
+  { value: 1, label: "Mon" },
+  { value: 2, label: "Tue" },
+  { value: 3, label: "Wed" },
+  { value: 4, label: "Thu" },
+  { value: 5, label: "Fri" },
+  { value: 6, label: "Sat" },
+  { value: 0, label: "Sun" },
+];
+
+const inputClass =
+  "rounded-lg border border-zinc-300 px-3 py-2 text-base dark:border-zinc-700 dark:bg-zinc-900";
+
 export function AddEventButton({
   dateIso,
   dayLabel,
@@ -20,6 +33,16 @@ export function AddEventButton({
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | undefined>();
   const [pending, startTransition] = useTransition();
+  const [repeat, setRepeat] = useState("NONE");
+  const [dateRows, setDateRows] = useState([{ id: "row-0", defaultValue: dateIso }]);
+
+  function addDateRow() {
+    setDateRows((rows) => [...rows, { id: `row-${rows.length}-${Date.now()}`, defaultValue: "" }]);
+  }
+
+  function removeDateRow(id: string) {
+    setDateRows((rows) => (rows.length > 1 ? rows.filter((r) => r.id !== id) : rows));
+  }
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -48,18 +71,14 @@ export function AddEventButton({
       {open && (
         <Modal title={`Add event – ${dayLabel}`} onClose={() => setOpen(false)}>
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            <input type="hidden" name="date" value={dateIso} />
+            {repeat !== "SET_DATES" && <input type="hidden" name="date" value={dateIso} />}
 
             {currentUser.role === "ADMIN" && members.length > 1 && (
               <div className="flex flex-col gap-1">
                 <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
                   For
                 </label>
-                <select
-                  name="ownerId"
-                  defaultValue={currentUser.id}
-                  className="rounded-lg border border-zinc-300 px-3 py-2 text-base dark:border-zinc-700 dark:bg-zinc-900"
-                >
+                <select name="ownerId" defaultValue={currentUser.id} className={inputClass}>
                   {members.map((m) => (
                     <option key={m.id} value={m.id}>
                       {m.name}
@@ -78,7 +97,7 @@ export function AddEventButton({
                 required
                 autoFocus
                 placeholder="Football practice"
-                className="rounded-lg border border-zinc-300 px-3 py-2 text-base dark:border-zinc-700 dark:bg-zinc-900"
+                className={inputClass}
               />
             </div>
 
@@ -87,34 +106,101 @@ export function AddEventButton({
                 <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
                   Start
                 </label>
-                <input
-                  type="time"
-                  name="startTime"
-                  required
-                  className="rounded-lg border border-zinc-300 px-3 py-2 text-base dark:border-zinc-700 dark:bg-zinc-900"
-                />
+                <input type="time" name="startTime" required className={inputClass} />
               </div>
               <div className="flex flex-1 flex-col gap-1">
                 <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
                   End (optional)
                 </label>
-                <input
-                  type="time"
-                  name="endTime"
-                  className="rounded-lg border border-zinc-300 px-3 py-2 text-base dark:border-zinc-700 dark:bg-zinc-900"
-                />
+                <input type="time" name="endTime" className={inputClass} />
               </div>
             </div>
 
             <div className="flex flex-col gap-1">
               <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                Repeats
+              </label>
+              <select
+                name="repeat"
+                value={repeat}
+                onChange={(e) => setRepeat(e.target.value)}
+                className={inputClass}
+              >
+                <option value="NONE">Doesn&apos;t repeat</option>
+                <option value="DAILY">Daily</option>
+                <option value="WEEKLY">Weekly, same day</option>
+                <option value="CUSTOM_DAYS">Certain days of the week</option>
+                <option value="SET_DATES">Multiple set dates</option>
+              </select>
+            </div>
+
+            {repeat === "CUSTOM_DAYS" && (
+              <div className="flex flex-col gap-1">
+                <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                  Which days?
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  {WEEKDAYS.map((d) => (
+                    <label
+                      key={d.value}
+                      className="flex items-center gap-1.5 rounded-lg border border-zinc-300 px-2.5 py-1.5 text-sm dark:border-zinc-700"
+                    >
+                      <input type="checkbox" name="repeatDays" value={d.value} />
+                      {d.label}
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {(repeat === "DAILY" || repeat === "WEEKLY" || repeat === "CUSTOM_DAYS") && (
+              <div className="flex flex-col gap-1">
+                <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                  Repeat until (optional)
+                </label>
+                <input type="date" name="repeatUntil" min={dateIso} className={inputClass} />
+              </div>
+            )}
+
+            {repeat === "SET_DATES" && (
+              <div className="flex flex-col gap-2">
+                <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                  Dates
+                </span>
+                {dateRows.map((row) => (
+                  <div key={row.id} className="flex gap-2">
+                    <input
+                      type="date"
+                      name="dates"
+                      required
+                      defaultValue={row.defaultValue}
+                      className={`flex-1 ${inputClass}`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeDateRow(row.id)}
+                      disabled={dateRows.length === 1}
+                      className="rounded-lg border border-zinc-300 px-3 text-sm text-zinc-600 disabled:opacity-40 dark:border-zinc-700 dark:text-zinc-400"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={addDateRow}
+                  className="self-start text-sm font-medium text-indigo-600 hover:underline dark:text-indigo-400"
+                >
+                  + Add another date
+                </button>
+              </div>
+            )}
+
+            <div className="flex flex-col gap-1">
+              <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
                 Notes (optional)
               </label>
-              <textarea
-                name="notes"
-                rows={2}
-                className="rounded-lg border border-zinc-300 px-3 py-2 text-base dark:border-zinc-700 dark:bg-zinc-900"
-              />
+              <textarea name="notes" rows={2} className={inputClass} />
             </div>
 
             {error && <p className="text-sm text-red-600">{error}</p>}
