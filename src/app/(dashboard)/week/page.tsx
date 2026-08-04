@@ -13,6 +13,7 @@ import { EventPill } from "@/components/EventPill";
 import { DayTimeGrid } from "@/components/DayTimeGrid";
 import { HighlightTarget } from "@/components/HighlightTarget";
 import { DayPicker } from "@/components/DayPicker";
+import { WeekPicker } from "@/components/WeekPicker";
 
 export default async function WeekPage({
   searchParams,
@@ -120,6 +121,7 @@ export default async function WeekPage({
               >
                 Next week →
               </Link>
+              <WeekPicker weekStartKey={dateKey(weekStart)} mineParam={mineParam} />
             </div>
           )}
         </div>

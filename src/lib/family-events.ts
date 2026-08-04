@@ -20,6 +20,11 @@ export type EventWithOwner = {
   recurrenceType: RecurrenceType;
   recurrenceDays: number[];
   recurrenceEndDate: string | null;
+  // Rows created together in one "add event" or import submission share a
+  // batchId. batchSize is how many rows are in that batch (including this
+  // one) — 1 for events created solo.
+  batchId: string | null;
+  batchSize: number;
 };
 
 export type DayBucket = {
@@ -144,6 +149,21 @@ export async function getWeekBuckets(weekStart: Date): Promise<DayBucket[]> {
     include: { owner: { select: { id: true, name: true, color: true } } },
   });
 
+  const batchIds = Array.from(
+    new Set(events.map((e) => e.batchId).filter((id): id is string => Boolean(id)))
+  );
+  const batchCounts =
+    batchIds.length > 0
+      ? await prisma.event.groupBy({
+          by: ["batchId"],
+          where: { batchId: { in: batchIds } },
+          _count: { _all: true },
+        })
+      : [];
+  const batchSizeByBatchId = new Map(
+    batchCounts.map((b) => [b.batchId as string, b._count._all])
+  );
+
   const buckets: DayBucket[] = days.map((date) => ({
     date,
     key: dateKey(date),
@@ -164,6 +184,8 @@ export async function getWeekBuckets(weekStart: Date): Promise<DayBucket[]> {
         ownerId: event.owner.id,
         ownerName: event.owner.name,
         ownerColor: event.owner.color,
+        batchId: event.batchId,
+        batchSize: event.batchId ? (batchSizeByBatchId.get(event.batchId) ?? 1) : 1,
         recurring: event.recurrenceType !== "NONE",
         anchorDate: dateKey(event.date),
         recurrenceType: event.recurrenceType as RecurrenceType,

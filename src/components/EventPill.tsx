@@ -248,6 +248,14 @@ export function EventPill({
               />
             </div>
 
+            {event.batchId && event.batchSize > 1 && (
+              <label className="flex items-center gap-2 text-sm text-zinc-700 dark:text-zinc-300">
+                <input type="checkbox" name="applyToBatch" value="1" />
+                Also apply this change to the other {event.batchSize - 1} calendar
+                {event.batchSize - 1 === 1 ? "" : "s"} this was added to
+              </label>
+            )}
+
             {error && <p className="text-sm text-red-600">{error}</p>}
 
             <div className="flex gap-3">

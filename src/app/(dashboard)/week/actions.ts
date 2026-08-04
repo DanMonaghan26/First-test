@@ -181,6 +181,30 @@ export async function updateEvent(
     },
   });
 
+  const applyToBatch = formData.get("applyToBatch") === "1";
+  if (applyToBatch && existing.batchId) {
+    // Siblings keep their own date and owner — only the shared "what/when
+    // in the day/whether it repeats" fields are copied across. Members can
+    // only touch their own events; admins can touch every sibling.
+    await prisma.event.updateMany({
+      where: {
+        batchId: existing.batchId,
+        id: { not: id },
+        ...(user.role === "ADMIN" ? {} : { ownerId: user.id }),
+      },
+      data: {
+        title,
+        notes: notes || null,
+        startTime,
+        endTime: endTime || null,
+        isReminder,
+        recurrenceType,
+        recurrenceDays,
+        recurrenceEndDate,
+      },
+    });
+  }
+
   revalidatePath("/week");
   return undefined;
 }
