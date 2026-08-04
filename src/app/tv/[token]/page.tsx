@@ -3,7 +3,7 @@ import { prisma } from "@/lib/db";
 import { getFamilyMembers, getWeekBuckets } from "@/lib/family-events";
 import { getWeekStart, dateKey } from "@/lib/week";
 import { TvAutoRefresh } from "@/components/TvAutoRefresh";
-import { DayTimeGrid } from "@/components/DayTimeGrid";
+import { TvDayGrid } from "@/components/TvDayGrid";
 
 export const dynamic = "force-dynamic";
 
@@ -29,17 +29,12 @@ export default async function TvDisplayPage({
   return (
     <div className="flex min-h-screen flex-col gap-4 bg-zinc-50 p-6 dark:bg-black">
       <TvAutoRefresh />
-      <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50">
+      <h1 className="text-4xl font-semibold text-zinc-900 dark:text-zinc-50">
         {day?.label ?? "Today"}
       </h1>
 
       {day ? (
-        <DayTimeGrid
-          day={day}
-          members={members}
-          currentUser={{ id: "", role: "MEMBER" }}
-          readOnly
-        />
+        <TvDayGrid day={day} members={members} />
       ) : (
         <p className="text-sm text-zinc-500 dark:text-zinc-400">No data for today.</p>
       )}

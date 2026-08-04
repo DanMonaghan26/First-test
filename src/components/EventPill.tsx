@@ -31,7 +31,7 @@ export function EventPill({
   event: EventWithOwner;
   dayLabel: string;
   canEdit: boolean;
-  variant?: "list" | "grid";
+  variant?: "list" | "grid" | "tv";
   isAdmin?: boolean;
   members?: FamilyMember[];
 }) {
@@ -57,18 +57,24 @@ export function EventPill({
     });
   }
 
-  function handleDelete() {
-    const confirmMessage = event.recurring
-      ? `Delete "${event.title}"? This is a repeating event — deleting it removes every occurrence.`
-      : `Delete "${event.title}"?`;
+  function handleDelete(scopeGroup: boolean) {
+    const confirmMessage = scopeGroup
+      ? `Delete "${event.title}" for everyone? This removes it from all ${event.eventGroupSize} calendars it's on.`
+      : event.recurring
+        ? `Delete "${event.title}"? This is a repeating event — deleting it removes every occurrence.`
+        : `Delete "${event.title}"?`;
     if (!confirm(confirmMessage)) return;
     const formData = new FormData();
     formData.set("id", event.id);
+    if (scopeGroup) formData.set("scope", "group");
     startTransition(async () => {
       await deleteEvent(formData);
       setOpen(false);
     });
   }
+
+  const canDeleteGroup = isAdmin && !!event.eventGroupId && event.eventGroupSize > 1;
+  const ownerName = members.find((m) => m.id === event.ownerId)?.name ?? "this calendar";
 
   return (
     <>
@@ -86,6 +92,27 @@ export function EventPill({
             {event.isReminder ? "📌 " : event.recurring ? "↻ " : ""}
             {event.title}
           </span>
+        </button>
+      ) : variant === "tv" ? (
+        <button
+          type="button"
+          onClick={() => canEdit && setOpen(true)}
+          className="h-full w-full overflow-hidden rounded-lg border-l-4 px-3 py-2 text-left"
+          style={{
+            borderColor: event.ownerColor,
+            backgroundColor: `${event.ownerColor}22`,
+          }}
+        >
+          <span className="line-clamp-2 text-base font-medium text-zinc-900 dark:text-zinc-50">
+            {event.isReminder ? "📌 " : event.recurring ? "↻ " : ""}
+            {event.title}
+          </span>
+          {!event.isReminder && (
+            <span className="block text-sm text-zinc-600 dark:text-zinc-400">
+              {event.startTime}
+              {event.endTime ? `–${event.endTime}` : ""}
+            </span>
+          )}
         </button>
       ) : (
         <button
@@ -308,22 +335,34 @@ export function EventPill({
 
             {error && <p className="text-sm text-red-600">{error}</p>}
 
-            <div className="flex gap-3">
-              <button
-                type="submit"
-                disabled={pending}
-                className="flex-1 rounded-lg bg-indigo-600 px-4 py-3 text-base font-semibold text-white disabled:opacity-60"
-              >
-                {pending ? "Saving..." : "Save"}
-              </button>
-              <button
-                type="button"
-                onClick={handleDelete}
-                disabled={pending}
-                className="rounded-lg border border-red-300 px-4 py-3 text-base font-semibold text-red-600 disabled:opacity-60 dark:border-red-900"
-              >
-                Delete
-              </button>
+            <div className="flex flex-col gap-2">
+              <div className="flex gap-3">
+                <button
+                  type="submit"
+                  disabled={pending}
+                  className="flex-1 rounded-lg bg-indigo-600 px-4 py-3 text-base font-semibold text-white disabled:opacity-60"
+                >
+                  {pending ? "Saving..." : "Save"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleDelete(false)}
+                  disabled={pending}
+                  className="rounded-lg border border-red-300 px-4 py-3 text-base font-semibold text-red-600 disabled:opacity-60 dark:border-red-900"
+                >
+                  {canDeleteGroup ? `Remove ${ownerName}` : "Delete"}
+                </button>
+              </div>
+              {canDeleteGroup && (
+                <button
+                  type="button"
+                  onClick={() => handleDelete(true)}
+                  disabled={pending}
+                  className="rounded-lg border border-red-300 px-4 py-2 text-sm font-medium text-red-600 disabled:opacity-60 dark:border-red-900"
+                >
+                  Delete for everyone ({event.eventGroupSize} calendars)
+                </button>
+              )}
             </div>
           </form>
         </Modal>

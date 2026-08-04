@@ -3,41 +3,12 @@
 import { EventPill } from "@/components/EventPill";
 import { AddEventButton } from "@/components/AddEventButton";
 import type { DayBucket } from "@/lib/family-events";
+import { computeHourRange, formatHourLabel, timeToMinutes } from "@/lib/day-time-grid";
 
 const HOUR_HEIGHT = 56; // px per hour
 const COLUMN_WIDTH = 128; // px per member column
-const DEFAULT_START_HOUR = 7;
-const DEFAULT_END_HOUR = 21;
 
 type Member = { id: string; name: string; color: string };
-
-function timeToMinutes(time: string): number {
-  const [h, m] = time.split(":").map(Number);
-  return h * 60 + (m || 0);
-}
-
-function formatHourLabel(hour: number): string {
-  const h = ((hour % 24) + 24) % 24;
-  const period = h < 12 ? "am" : "pm";
-  const displayHour = h % 12 === 0 ? 12 : h % 12;
-  return `${displayHour}${period}`;
-}
-
-function computeRange(events: DayBucket["events"]): { startHour: number; endHour: number } {
-  let startHour = DEFAULT_START_HOUR;
-  let endHour = DEFAULT_END_HOUR;
-  for (const event of events) {
-    if (event.isReminder) continue;
-    const startH = Math.floor(timeToMinutes(event.startTime) / 60);
-    if (startH < startHour) startHour = startH;
-    const endMinutes = event.endTime
-      ? timeToMinutes(event.endTime)
-      : timeToMinutes(event.startTime) + 30;
-    const endH = Math.ceil(endMinutes / 60);
-    if (endH > endHour) endHour = endH;
-  }
-  return { startHour: Math.max(0, startHour), endHour: Math.min(24, endHour) };
-}
 
 export function DayTimeGrid({
   day,
@@ -50,7 +21,7 @@ export function DayTimeGrid({
   currentUser: { id: string; role: "ADMIN" | "MEMBER" };
   readOnly?: boolean;
 }) {
-  const { startHour, endHour } = computeRange(day.events);
+  const { startHour, endHour } = computeHourRange(day.events);
   const totalHours = endHour - startHour;
   const totalHeight = totalHours * HOUR_HEIGHT;
   const hours = Array.from({ length: totalHours + 1 }, (_, i) => startHour + i);

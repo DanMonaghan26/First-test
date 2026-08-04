@@ -269,6 +269,11 @@ export async function deleteEvent(formData: FormData): Promise<void> {
   if (!existing) return;
   if (existing.ownerId !== user.id && user.role !== "ADMIN") return;
 
-  await prisma.event.delete({ where: { id } });
+  const scope = String(formData.get("scope") ?? "");
+  if (scope === "group" && existing.eventGroupId && user.role === "ADMIN") {
+    await prisma.event.deleteMany({ where: { eventGroupId: existing.eventGroupId } });
+  } else {
+    await prisma.event.delete({ where: { id } });
+  }
   revalidatePath("/week");
 }
