@@ -195,9 +195,12 @@ export default async function WeekPage({
                 key={day.key}
                 className="flex flex-col gap-2 rounded-xl border border-zinc-200 bg-zinc-50/60 p-3 dark:border-zinc-800 dark:bg-zinc-950/40"
               >
-                <h2 className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
+                <Link
+                  href={`/week?view=today&day=${day.key}${mineParam}`}
+                  className="text-sm font-semibold text-zinc-700 hover:text-indigo-600 hover:underline dark:text-zinc-300 dark:hover:text-indigo-400"
+                >
                   {day.label}
-                </h2>
+                </Link>
                 <div className="flex flex-col gap-2">
                   {dayEvents.map((event) => (
                     <EventPill
