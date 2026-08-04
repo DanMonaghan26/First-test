@@ -13,7 +13,7 @@ export function NavBar({
       <div className="mx-auto flex max-w-4xl items-center justify-between gap-4 px-4 py-3">
         <div className="flex items-center gap-4">
           <Link href="/week" className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">
-            Family Planner
+            Family Planner 🚀 (auto-deploy test)
           </Link>
           {role === "ADMIN" && (
             <Link
