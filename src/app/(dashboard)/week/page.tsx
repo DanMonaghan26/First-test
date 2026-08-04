@@ -4,6 +4,7 @@ import { getFamilyMembers, getWeekBuckets } from "@/lib/family-events";
 import { formatWeekRangeLabel, getWeekStart, shiftWeek, dateKey } from "@/lib/week";
 import { AddEventButton } from "@/components/AddEventButton";
 import { EventPill } from "@/components/EventPill";
+import { DayTimeGrid } from "@/components/DayTimeGrid";
 
 export default async function WeekPage({
   searchParams,
@@ -95,7 +96,7 @@ export default async function WeekPage({
         </div>
       </div>
 
-      {members.length > 1 && (
+      {members.length > 1 && !showTodayOnly && (
         <div className="flex flex-wrap gap-3">
           {members.map((m) => (
             <span
@@ -112,51 +113,57 @@ export default async function WeekPage({
         </div>
       )}
 
-      <div
-        className={
-          showTodayOnly
-            ? "grid max-w-sm grid-cols-1 gap-4"
-            : "grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-7"
-        }
-      >
-        {buckets.map((day) => {
-          const dayEvents = showMineOnly
-            ? day.events.filter((e) => e.ownerId === user.id)
-            : day.events;
+      {showTodayOnly ? (
+        buckets[0] ? (
+          <DayTimeGrid
+            day={buckets[0]}
+            members={showMineOnly ? members.filter((m) => m.id === user.id) : members}
+            currentUser={{ id: user.id, role: user.role }}
+          />
+        ) : (
+          <p className="text-sm text-zinc-500 dark:text-zinc-400">No data for today.</p>
+        )
+      ) : (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-7">
+          {buckets.map((day) => {
+            const dayEvents = showMineOnly
+              ? day.events.filter((e) => e.ownerId === user.id)
+              : day.events;
 
-          return (
-            <div
-              key={day.key}
-              className="flex flex-col gap-2 rounded-xl border border-zinc-200 bg-zinc-50/60 p-3 dark:border-zinc-800 dark:bg-zinc-950/40"
-            >
-              <h2 className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
-                {day.label}
-              </h2>
-              <div className="flex flex-col gap-2">
-                {dayEvents.map((event) => (
-                  <EventPill
-                    key={event.id}
-                    event={event}
-                    dayLabel={day.label}
-                    canEdit={user.role === "ADMIN" || event.ownerId === user.id}
-                  />
-                ))}
-                {dayEvents.length === 0 && (
-                  <p className="text-xs text-zinc-400 dark:text-zinc-600">
-                    No events
-                  </p>
-                )}
+            return (
+              <div
+                key={day.key}
+                className="flex flex-col gap-2 rounded-xl border border-zinc-200 bg-zinc-50/60 p-3 dark:border-zinc-800 dark:bg-zinc-950/40"
+              >
+                <h2 className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
+                  {day.label}
+                </h2>
+                <div className="flex flex-col gap-2">
+                  {dayEvents.map((event) => (
+                    <EventPill
+                      key={event.id}
+                      event={event}
+                      dayLabel={day.label}
+                      canEdit={user.role === "ADMIN" || event.ownerId === user.id}
+                    />
+                  ))}
+                  {dayEvents.length === 0 && (
+                    <p className="text-xs text-zinc-400 dark:text-zinc-600">
+                      No events
+                    </p>
+                  )}
+                </div>
+                <AddEventButton
+                  dateIso={day.key}
+                  dayLabel={day.label}
+                  currentUser={{ id: user.id, role: user.role }}
+                  members={members}
+                />
               </div>
-              <AddEventButton
-                dateIso={day.key}
-                dayLabel={day.label}
-                currentUser={{ id: user.id, role: user.role }}
-                members={members}
-              />
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

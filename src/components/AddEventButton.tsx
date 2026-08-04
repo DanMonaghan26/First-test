@@ -24,11 +24,15 @@ export function AddEventButton({
   dayLabel,
   currentUser,
   members,
+  defaultOwnerId,
+  compact,
 }: {
   dateIso: string;
   dayLabel: string;
   currentUser: { id: string; role: "ADMIN" | "MEMBER" };
   members: FamilyMember[];
+  defaultOwnerId?: string;
+  compact?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | undefined>();
@@ -60,13 +64,24 @@ export function AddEventButton({
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="flex w-full items-center justify-center gap-1 rounded-lg border border-dashed border-zinc-300 py-2 text-sm font-medium text-zinc-500 hover:border-indigo-400 hover:text-indigo-600 dark:border-zinc-700 dark:text-zinc-500 dark:hover:border-indigo-500 dark:hover:text-indigo-400"
-      >
-        + Add event
-      </button>
+      {compact ? (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          aria-label="Add event"
+          className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border border-dashed border-zinc-300 text-xs text-zinc-500 hover:border-indigo-400 hover:text-indigo-600 dark:border-zinc-700 dark:text-zinc-500 dark:hover:border-indigo-500 dark:hover:text-indigo-400"
+        >
+          +
+        </button>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="flex w-full items-center justify-center gap-1 rounded-lg border border-dashed border-zinc-300 py-2 text-sm font-medium text-zinc-500 hover:border-indigo-400 hover:text-indigo-600 dark:border-zinc-700 dark:text-zinc-500 dark:hover:border-indigo-500 dark:hover:text-indigo-400"
+        >
+          + Add event
+        </button>
+      )}
 
       {open && (
         <Modal title={`Add event – ${dayLabel}`} onClose={() => setOpen(false)}>
@@ -78,7 +93,11 @@ export function AddEventButton({
                 <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
                   For
                 </label>
-                <select name="ownerId" defaultValue={currentUser.id} className={inputClass}>
+                <select
+                  name="ownerId"
+                  defaultValue={defaultOwnerId ?? currentUser.id}
+                  className={inputClass}
+                >
                   {members.map((m) => (
                     <option key={m.id} value={m.id}>
                       {m.name}
