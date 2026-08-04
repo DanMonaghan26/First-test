@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/auth";
-import { getFamilyMembers, getWeekBuckets, getLastUndoableBatch } from "@/lib/family-events";
-import { UndoBanner } from "@/components/UndoBanner";
+import { getFamilyMembers, getWeekBuckets } from "@/lib/family-events";
 import {
   formatWeekRangeLabel,
   getWeekStart,
@@ -38,10 +37,9 @@ export default async function WeekPage({
   const selectedDayKey = showTodayOnly ? params.day || actualTodayKey : actualTodayKey;
   const dayViewWeekStart = getWeekStart(selectedDayKey);
 
-  const [members, fetchedBuckets, undoableBatch] = await Promise.all([
+  const [members, fetchedBuckets] = await Promise.all([
     getFamilyMembers(),
     getWeekBuckets(showTodayOnly ? dayViewWeekStart : weekStart),
-    getLastUndoableBatch(user.id),
   ]);
 
   const buckets = showTodayOnly
@@ -63,7 +61,6 @@ export default async function WeekPage({
   return (
     <div className="flex flex-col gap-6">
       <HighlightTarget eventId={params.highlight} />
-      {undoableBatch && <UndoBanner title={undoableBatch.title} count={undoableBatch.count} />}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-semibold text-zinc-900 dark:text-zinc-50">
