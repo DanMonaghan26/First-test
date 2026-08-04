@@ -42,6 +42,8 @@ with no Node install and nothing running on your own computer:
    - `SESSION_SECRET` — any long random string (e.g. run `openssl rand -base64 32`
      locally, or use a password generator)
    - `COOKIE_SECURE` — `true` (Vercel serves everything over HTTPS)
+   - `ANTHROPIC_API_KEY` — optional, only needed for the "Import from text" page (see
+     below). Get one from [console.anthropic.com](https://console.anthropic.com/settings/keys).
 4. Click **Deploy**. Vercel installs dependencies, applies the database schema
    (`prisma migrate deploy` runs as part of the build), and gives you a URL
    like `https://your-app.vercel.app`.
@@ -84,6 +86,12 @@ in development.
   calendar. Admins additionally get a "For" dropdown when adding an event, so they
   can add it to another family member's calendar. Everyone's events for the week
   are visible on this same page, color-coded per person.
+- **`/subscriptions`** — subscribe to an external calendar (like a school's .ics link) so
+  its events import automatically and stay in sync.
+- **`/import`** — for dates that only exist as free text (a newsletter, a letter, a school
+  webpage without a calendar feed), paste the text or a link and Claude pulls out the events
+  for you to review, edit, and choose which family member's calendar to add them to. Needs
+  `ANTHROPIC_API_KEY` set (see above) — the page says so if it isn't.
 - **`/admin`** — add/remove family members, reset passwords, and generate the TV
   display link. Only visible to admins.
 - **`/tv/[token]`** — the kitchen TV view. Go to Admin → "Generate TV link", open

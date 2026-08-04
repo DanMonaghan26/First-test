@@ -13,18 +13,31 @@ export function NavBar({
     <header className="sticky top-0 z-10 border-b border-zinc-200 bg-white/90 backdrop-blur dark:border-zinc-800 dark:bg-black/90">
       <div className="mx-auto flex max-w-4xl flex-wrap items-center justify-between gap-3 px-4 py-3">
         <div className="flex items-center gap-4">
-          <Link href="/week" className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">
+          <Link
+            href="/week"
+            prefetch={false}
+            className="text-lg font-semibold text-zinc-900 dark:text-zinc-50"
+          >
             Family Planner
           </Link>
           <Link
             href="/subscriptions"
+            prefetch={false}
             className="text-sm font-medium text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50"
           >
             Subscriptions
           </Link>
+          <Link
+            href="/import"
+            prefetch={false}
+            className="text-sm font-medium text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50"
+          >
+            Import from text
+          </Link>
           {role === "ADMIN" && (
             <Link
               href="/admin"
+              prefetch={false}
               className="text-sm font-medium text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50"
             >
               Admin
