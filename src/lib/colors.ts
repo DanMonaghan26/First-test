@@ -6,6 +6,7 @@ export const RAINBOW_COLORS = [
   { value: "#3b82f6", label: "Blue" },
   { value: "#6366f1", label: "Indigo" },
   { value: "#a855f7", label: "Violet" },
+  { value: "#71717a", label: "Grey" },
 ] as const;
 
 export function pickAvailableColor(usedColors: string[]): string {
