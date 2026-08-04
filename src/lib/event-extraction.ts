@@ -81,24 +81,53 @@ export async function extractEventsFromInput(
 
   const today = new Date().toISOString().slice(0, 10);
 
-  const prompt = `Today's date is ${today}. Extract every distinct calendar-worthy event, date, or deadline mentioned in the text below (e.g. inset days, school trips, term dates, deadlines, club sessions, sports days, holidays, parents' evenings). Ignore anything that isn't tied to a specific date.
+  const prompt = `Today's date is ${today}. Extract every distinct calendar-worthy event, date, or deadline mentioned in the text below (e.g. inset days, school trips, term dates, deadlines, club sessions, sports days, holidays, parents' evenings, exeats). Ignore anything that isn't tied to a specific date.
 
 For dates given without a year, infer the most sensible year given today's date (assume the near future, not the past, unless the text clearly states a past year).
 
-Respond with ONLY a JSON array (no prose, no markdown fences). Each item must have exactly these fields:
-- "title": short plain-English event name
-- "date": start date as YYYY-MM-DD
-- "endDate": end date as YYYY-MM-DD if it's a multi-day event/range, otherwise null
-- "allDay": true if no specific time is given, false otherwise
-- "startTime": "HH:MM" (24-hour) if a specific time is given, otherwise null
-- "endTime": "HH:MM" (24-hour) if a specific end time is given, otherwise null
+If an item spans a range (e.g. an exeat or half term from one day to another), use "date" for the first day and "endDate" for the last day, with "startTime"/"endTime" as the times on those respective days if given.
 
-If nothing looks like an event, respond with an empty array: []
+Call the record_events tool with everything you find. If nothing looks like an event, call it with an empty events array.
 
 Text:
 """
 ${source.value}
 """`;
+
+  const tool = {
+    name: "record_events",
+    description: "Record every distinct calendar event found in the text.",
+    input_schema: {
+      type: "object",
+      properties: {
+        events: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              title: { type: "string", description: "Short plain-English event name" },
+              date: { type: "string", description: "Start date, YYYY-MM-DD" },
+              endDate: {
+                type: "string",
+                description: "End date as YYYY-MM-DD for a multi-day range, or an empty string if it's a single day",
+              },
+              allDay: { type: "boolean", description: "true if no specific time is given" },
+              startTime: {
+                type: "string",
+                description: "Start time as HH:MM in 24-hour format, or an empty string if no time is given",
+              },
+              endTime: {
+                type: "string",
+                description: "End time as HH:MM in 24-hour format, or an empty string if no end time is given",
+              },
+            },
+            required: ["title", "date", "endDate", "allDay", "startTime", "endTime"],
+          },
+        },
+      },
+      required: ["events"],
+    },
+  };
 
   let res: Response;
   try {
@@ -114,6 +143,8 @@ ${source.value}
           model: "claude-sonnet-5",
           max_tokens: 4096,
           messages: [{ role: "user", content: prompt }],
+          tools: [tool],
+          tool_choice: { type: "tool", name: "record_events" },
         }),
       }),
       30_000,
@@ -128,31 +159,28 @@ ${source.value}
   }
 
   const json = await res.json();
-  const raw: string = json?.content?.[0]?.text ?? "";
-  const cleaned = raw
-    .trim()
-    .replace(/^```(?:json)?/i, "")
-    .replace(/```$/, "")
-    .trim();
+  const content: unknown[] = Array.isArray(json?.content) ? json.content : [];
+  const toolUse = content.find(
+    (block): block is { type: "tool_use"; input: unknown } =>
+      typeof block === "object" &&
+      block !== null &&
+      (block as { type?: unknown }).type === "tool_use" &&
+      (block as { name?: unknown }).name === "record_events"
+  );
 
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(cleaned);
-  } catch {
+  const rawEvents =
+    toolUse && typeof toolUse.input === "object" && toolUse.input !== null
+      ? (toolUse.input as { events?: unknown }).events
+      : undefined;
+
+  if (!Array.isArray(rawEvents)) {
     return {
       ok: false,
       error: "Couldn't understand the extracted events — try pasting a smaller, cleaner chunk of text.",
     };
   }
 
-  if (!Array.isArray(parsed)) {
-    return {
-      ok: false,
-      error: "Couldn't understand the extracted events — try pasting a smaller, cleaner chunk of text.",
-    };
-  }
-
-  const events: ExtractedEvent[] = parsed
+  const events: ExtractedEvent[] = rawEvents
     .filter((e): e is Record<string, unknown> => typeof e === "object" && e !== null)
     .map((e) => ({
       title: typeof e.title === "string" ? e.title.trim() : "",
