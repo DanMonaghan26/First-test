@@ -2,7 +2,7 @@ import { headers } from "next/headers";
 import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { AddMemberForm } from "@/components/admin/AddMemberForm";
-import { ResetPasswordButton } from "@/components/admin/ResetPasswordButton";
+import { ManageAccessButton } from "@/components/admin/ManageAccessButton";
 import { RemoveMemberButton } from "@/components/admin/RemoveMemberButton";
 import { DeleteDisplayLinkButton } from "@/components/admin/DeleteDisplayLinkButton";
 import { createDisplayLink } from "./actions";
@@ -16,6 +16,7 @@ export default async function AdminPage() {
     headers(),
   ]);
 
+  const usedColors = members.map((m) => m.color);
   const host = headersList.get("host") ?? "localhost:3000";
   const protocol =
     headersList.get("x-forwarded-proto") ??
@@ -52,12 +53,22 @@ export default async function AdminPage() {
                     )}
                   </p>
                   <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                    {member.email}
+                    {member.email ?? "No login access yet"}
+                    {member.email && !member.passwordHash && (
+                      <span className="ml-1.5 rounded bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-800 dark:bg-amber-950 dark:text-amber-300">
+                        Email-only sign-in
+                      </span>
+                    )}
                   </p>
                 </div>
               </div>
               <div className="flex items-center gap-4">
-                <ResetPasswordButton userId={member.id} userName={member.name} />
+                <ManageAccessButton
+                  userId={member.id}
+                  userName={member.name}
+                  currentEmail={member.email}
+                  currentlyRequiresPassword={Boolean(member.passwordHash)}
+                />
                 {member.id !== admin.id && (
                   <RemoveMemberButton userId={member.id} userName={member.name} />
                 )}
@@ -67,7 +78,7 @@ export default async function AdminPage() {
         </div>
 
         <div className="mt-4">
-          <AddMemberForm />
+          <AddMemberForm usedColors={usedColors} />
         </div>
       </div>
 

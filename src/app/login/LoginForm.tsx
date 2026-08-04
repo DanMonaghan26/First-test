@@ -30,8 +30,8 @@ export function LoginForm() {
           id="password"
           name="password"
           type="password"
-          required
           autoComplete="current-password"
+          placeholder="Leave blank if you don't have one"
           className="rounded-lg border border-zinc-300 px-4 py-3 text-base dark:border-zinc-700 dark:bg-zinc-900"
         />
       </div>

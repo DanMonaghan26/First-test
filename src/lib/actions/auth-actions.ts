@@ -47,13 +47,22 @@ export async function login(
     .toLowerCase();
   const password = String(formData.get("password") ?? "");
 
-  if (!email || !password) {
-    return { error: "Please enter your email and password." };
+  if (!email) {
+    return { error: "Please enter your email." };
   }
 
   const user = await prisma.user.findUnique({ where: { email } });
-  if (!user || !(await verifyPassword(password, user.passwordHash))) {
+  if (!user) {
     return { error: "Invalid email or password." };
+  }
+
+  // Members an admin set up without a password can sign in with just their
+  // email — an intentional convenience tradeoff for a private family app.
+  if (user.passwordHash) {
+    const valid = await verifyPassword(password, user.passwordHash);
+    if (!valid) {
+      return { error: "Invalid email or password." };
+    }
   }
 
   await createSession({ userId: user.id, role: user.role });

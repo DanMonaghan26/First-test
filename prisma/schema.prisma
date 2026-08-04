@@ -22,8 +22,11 @@ enum RecurrenceType {
 model User {
   id           String   @id @default(cuid())
   name         String
-  email        String   @unique
-  passwordHash String
+  // Nullable: a member can be added as a placeholder (name + color only, no
+  // login) until an admin invites them by setting an email. passwordHash is
+  // also nullable — a member can sign in with email only, no password.
+  email        String?  @unique
+  passwordHash String?
   role         Role     @default(MEMBER)
   color        String   @default("#6366f1")
   createdAt    DateTime @default(now())
