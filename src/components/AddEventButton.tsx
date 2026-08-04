@@ -19,6 +19,16 @@ const WEEKDAYS = [
 const inputClass =
   "rounded-lg border border-zinc-300 px-3 py-2 text-base dark:border-zinc-700 dark:bg-zinc-900";
 
+function formatDateLabel(dateStr: string): string {
+  const parsed = new Date(`${dateStr}T12:00:00`);
+  if (Number.isNaN(parsed.getTime())) return dateStr;
+  return parsed.toLocaleDateString("en-GB", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+  });
+}
+
 export function AddEventButton({
   dateIso,
   dayLabel,
@@ -38,6 +48,7 @@ export function AddEventButton({
   const [error, setError] = useState<string | undefined>();
   const [pending, startTransition] = useTransition();
   const [repeat, setRepeat] = useState("NONE");
+  const [date, setDate] = useState(dateIso);
   const [dateRows, setDateRows] = useState([{ id: "row-0", defaultValue: dateIso }]);
 
   function addDateRow() {
@@ -67,6 +78,7 @@ export function AddEventButton({
       } else {
         setError(undefined);
         setOpen(false);
+        setDate(dateIso);
       }
     });
   }
@@ -93,9 +105,26 @@ export function AddEventButton({
       )}
 
       {open && (
-        <Modal title={`Add event – ${dayLabel}`} onClose={() => setOpen(false)}>
+        <Modal
+          title={`Add event – ${repeat === "SET_DATES" ? dayLabel : formatDateLabel(date)}`}
+          onClose={() => setOpen(false)}
+        >
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            {repeat !== "SET_DATES" && <input type="hidden" name="date" value={dateIso} />}
+            {repeat !== "SET_DATES" && (
+              <div className="flex flex-col gap-1">
+                <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                  Date
+                </label>
+                <input
+                  type="date"
+                  name="date"
+                  required
+                  value={date}
+                  onChange={(e) => setDate(e.target.value)}
+                  className={inputClass}
+                />
+              </div>
+            )}
 
             {currentUser.role === "ADMIN" && members.length > 1 && (
               <div className="flex flex-col gap-1">
@@ -197,7 +226,7 @@ export function AddEventButton({
                 <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
                   Repeat until (optional)
                 </label>
-                <input type="date" name="repeatUntil" min={dateIso} className={inputClass} />
+                <input type="date" name="repeatUntil" min={date} className={inputClass} />
               </div>
             )}
 
