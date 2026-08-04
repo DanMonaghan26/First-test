@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { logout } from "@/lib/actions/auth-actions";
 import { SearchBox } from "@/components/SearchBox";
@@ -16,9 +17,16 @@ export function NavBar({
           <Link
             href="/week"
             prefetch={false}
-            className="text-lg font-semibold text-zinc-900 dark:text-zinc-50"
+            className="flex items-center gap-2 text-lg font-semibold text-zinc-900 dark:text-zinc-50"
           >
-            Family Planner
+            <Image
+              src="/monaghan-family.jpg"
+              alt=""
+              width={32}
+              height={32}
+              className="h-8 w-8 flex-shrink-0 rounded-full object-cover"
+            />
+            Monaghan Family Planner
           </Link>
           <Link
             href="/subscriptions"
