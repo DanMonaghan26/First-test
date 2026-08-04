@@ -7,6 +7,7 @@ import { computeHourRange, formatHourLabel, timeToMinutes } from "@/lib/day-time
 
 const ROW_HEIGHT = 96; // px per member row
 const NAME_COL_WIDTH = 200; // px for the member name column
+const REMINDER_COL_WIDTH = 220; // px for the per-member reminders column, when shown
 const MIN_HOUR_WIDTH = 70; // px per hour, below which times get hard to tap/read
 const MAX_HOUR_WIDTH = 140; // px per hour, above which a short day looks too spread out
 const DEFAULT_HOUR_WIDTH = 120; // used for one frame before the container is first measured
@@ -34,12 +35,15 @@ export function TvDayGrid({ day, members }: { day: DayBucket; members: Member[] 
     return () => observer.disconnect();
   }, []);
 
+  const hasReminders = day.events.some((e) => e.isReminder);
+  const leadingColsWidth = NAME_COL_WIDTH + (hasReminders ? REMINDER_COL_WIDTH : 0);
+
   const { startHour, endHour } = computeHourRange(day.events);
   const totalHours = endHour - startHour;
   const hourWidth = containerWidth
     ? Math.min(
         MAX_HOUR_WIDTH,
-        Math.max(MIN_HOUR_WIDTH, Math.floor((containerWidth - NAME_COL_WIDTH) / totalHours))
+        Math.max(MIN_HOUR_WIDTH, Math.floor((containerWidth - leadingColsWidth) / totalHours))
       )
     : DEFAULT_HOUR_WIDTH;
   const totalWidth = totalHours * hourWidth;
@@ -51,8 +55,6 @@ export function TvDayGrid({ day, members }: { day: DayBucket; members: Member[] 
   const nowLeft = ((nowMinutes - startHour * 60) / 60) * hourWidth;
   const showNowLine = isToday && nowMinutes >= startHour * 60 && nowMinutes <= endHour * 60;
 
-  const reminders = day.events.filter((e) => e.isReminder);
-
   return (
     <div
       ref={containerRef}
@@ -60,7 +62,7 @@ export function TvDayGrid({ day, members }: { day: DayBucket; members: Member[] 
     >
       <div className="flex flex-col">
         <div className="flex border-b border-zinc-200 dark:border-zinc-800">
-          <div style={{ width: NAME_COL_WIDTH }} className="flex-shrink-0" />
+          <div style={{ width: leadingColsWidth }} className="flex-shrink-0" />
           <div className="relative overflow-hidden" style={{ width: totalWidth, height: 44 }}>
             {hours.map((hour, i) => {
               const edgeClass =
@@ -78,26 +80,20 @@ export function TvDayGrid({ day, members }: { day: DayBucket; members: Member[] 
           </div>
         </div>
 
-        {reminders.length > 0 && (
-          <div className="flex border-b border-zinc-200 dark:border-zinc-800">
-            <div style={{ width: NAME_COL_WIDTH }} className="flex-shrink-0" />
-            <div className="flex flex-wrap items-center gap-3 px-4 py-3">
-              {reminders.map((event) => (
-                <div key={event.id} className="h-16 w-56">
-                  <EventPill event={event} dayLabel={day.label} canEdit={false} variant="tv" />
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
         {members.map((member) => {
           const memberEvents = day.events.filter(
             (e) => e.ownerId === member.id && !e.isReminder
           );
+          const memberReminders = day.events.filter(
+            (e) => e.ownerId === member.id && e.isReminder
+          );
 
           return (
-            <div key={member.id} className="flex border-b border-zinc-200 dark:border-zinc-800">
+            <div
+              key={member.id}
+              className="flex border-b border-zinc-200 dark:border-zinc-800"
+              style={{ minHeight: ROW_HEIGHT }}
+            >
               <div
                 style={{ width: NAME_COL_WIDTH }}
                 className="flex flex-shrink-0 items-center gap-2 px-3 py-2"
@@ -111,7 +107,24 @@ export function TvDayGrid({ day, members }: { day: DayBucket; members: Member[] 
                 </span>
               </div>
 
-              <div className="relative flex-shrink-0" style={{ width: totalWidth, height: ROW_HEIGHT }}>
+              {hasReminders && (
+                <div
+                  style={{ width: REMINDER_COL_WIDTH }}
+                  className="flex flex-shrink-0 flex-col justify-center gap-1.5 border-l border-zinc-200 px-2 py-2 dark:border-zinc-800"
+                >
+                  {memberReminders.map((event) => (
+                    <EventPill
+                      key={event.id}
+                      event={event}
+                      dayLabel={day.label}
+                      canEdit={false}
+                      variant="tv"
+                    />
+                  ))}
+                </div>
+              )}
+
+              <div className="relative flex-shrink-0" style={{ width: totalWidth }}>
                 {hours.map((hour) => (
                   <div
                     key={hour}
