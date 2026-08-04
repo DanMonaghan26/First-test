@@ -110,6 +110,46 @@ export async function updateMemberAccess(
   return undefined;
 }
 
+const MAX_PHOTO_DATA_URL_LENGTH = 2_000_000; // ~1.5MB decoded — resized client-side well under this
+
+export async function updateMemberPhoto(
+  _prevState: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  await requireAdmin();
+
+  const userId = String(formData.get("userId") ?? "");
+  if (!userId) {
+    return { error: "Missing family member." };
+  }
+
+  const photoDataUrl = String(formData.get("photoDataUrl") ?? "").trim();
+  const removePhoto = formData.get("removePhoto") === "1";
+
+  if (removePhoto) {
+    await prisma.user.update({ where: { id: userId }, data: { photoUrl: null } });
+    revalidatePath("/admin");
+    revalidatePath("/week");
+    return undefined;
+  }
+
+  if (!photoDataUrl) {
+    return { error: "Please choose a photo." };
+  }
+  if (!photoDataUrl.startsWith("data:image/")) {
+    return { error: "That doesn't look like a photo." };
+  }
+  if (photoDataUrl.length > MAX_PHOTO_DATA_URL_LENGTH) {
+    return { error: "That photo is too large — try a different one." };
+  }
+
+  await prisma.user.update({ where: { id: userId }, data: { photoUrl: photoDataUrl } });
+
+  revalidatePath("/admin");
+  revalidatePath("/week");
+  return undefined;
+}
+
 export async function removeMember(formData: FormData): Promise<void> {
   const admin = await requireAdmin();
   const userId = String(formData.get("userId") ?? "");

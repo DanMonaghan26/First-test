@@ -31,6 +31,11 @@ model User {
   color        String   @default("#6366f1")
   createdAt    DateTime @default(now())
 
+  // A small passport-style photo, stored as a data: URL — resized/compressed
+  // client-side before upload, so this stays a modest size. Shown in place
+  // of the name on the TV/display views when set.
+  photoUrl String?
+
   events        Event[] @relation("OwnedEvents")
   createdEvents Event[] @relation("CreatedEvents")
   subscriptions CalendarSubscription[]

@@ -12,7 +12,7 @@ const MIN_HOUR_WIDTH = 70; // px per hour, below which times get hard to tap/rea
 const MAX_HOUR_WIDTH = 140; // px per hour, above which a short day looks too spread out
 const DEFAULT_HOUR_WIDTH = 120; // used for one frame before the container is first measured
 
-type Member = { id: string; name: string; color: string };
+type Member = { id: string; name: string; color: string; photoUrl?: string | null };
 
 // Landscape layout for a widescreen TV: family members run down the side as
 // rows, hours run across the top as columns — the reverse of DayTimeGrid,
@@ -98,13 +98,25 @@ export function TvDayGrid({ day, members }: { day: DayBucket; members: Member[] 
                 style={{ width: NAME_COL_WIDTH }}
                 className="flex flex-shrink-0 items-center gap-2 px-3 py-2"
               >
-                <span
-                  className="h-4 w-4 flex-shrink-0 rounded-full"
-                  style={{ backgroundColor: member.color }}
-                />
-                <span className="truncate text-xl font-medium text-zinc-800 dark:text-zinc-200">
-                  {member.name}
-                </span>
+                {member.photoUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element -- base64 data URL, not something next/image can optimize
+                  <img
+                    src={member.photoUrl}
+                    alt={member.name}
+                    className="h-12 w-12 flex-shrink-0 rounded-full border-2 object-cover"
+                    style={{ borderColor: member.color }}
+                  />
+                ) : (
+                  <>
+                    <span
+                      className="h-4 w-4 flex-shrink-0 rounded-full"
+                      style={{ backgroundColor: member.color }}
+                    />
+                    <span className="truncate text-xl font-medium text-zinc-800 dark:text-zinc-200">
+                      {member.name}
+                    </span>
+                  </>
+                )}
               </div>
 
               {hasReminders && (

@@ -14,7 +14,7 @@ export async function computeTodayVersion(dayKey?: string): Promise<string> {
   const day = buckets.find((b) => b.key === targetKey);
 
   return [
-    members.map((m) => `${m.id}:${m.name}:${m.color}`).join(","),
+    members.map((m) => `${m.id}:${m.name}:${m.color}:${m.photoUrl ?? ""}`).join(","),
     (day?.events ?? [])
       .map(
         (e) =>

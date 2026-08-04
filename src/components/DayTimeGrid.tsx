@@ -8,7 +8,7 @@ import { computeHourRange, formatHourLabel, timeToMinutes } from "@/lib/day-time
 const HOUR_HEIGHT = 56; // px per hour
 const COLUMN_WIDTH = 128; // px per member column
 
-type Member = { id: string; name: string; color: string };
+type Member = { id: string; name: string; color: string; photoUrl?: string | null };
 
 export function DayTimeGrid({
   day,
@@ -47,13 +47,25 @@ export function DayTimeGrid({
                 className="flex flex-shrink-0 items-center justify-between gap-1 border-l border-zinc-200 px-2 py-2 dark:border-zinc-800"
               >
                 <div className="flex min-w-0 items-center gap-1.5">
-                  <span
-                    className="h-2.5 w-2.5 flex-shrink-0 rounded-full"
-                    style={{ backgroundColor: member.color }}
-                  />
-                  <span className="truncate text-xs font-medium text-zinc-700 dark:text-zinc-300">
-                    {member.name}
-                  </span>
+                  {member.photoUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element -- base64 data URL, not something next/image can optimize
+                    <img
+                      src={member.photoUrl}
+                      alt={member.name}
+                      className="h-6 w-6 flex-shrink-0 rounded-full border object-cover"
+                      style={{ borderColor: member.color }}
+                    />
+                  ) : (
+                    <>
+                      <span
+                        className="h-2.5 w-2.5 flex-shrink-0 rounded-full"
+                        style={{ backgroundColor: member.color }}
+                      />
+                      <span className="truncate text-xs font-medium text-zinc-700 dark:text-zinc-300">
+                        {member.name}
+                      </span>
+                    </>
+                  )}
                 </div>
                 {canAdd && (
                   <AddEventButton

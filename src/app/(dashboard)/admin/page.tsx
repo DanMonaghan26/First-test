@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { AddMemberForm } from "@/components/admin/AddMemberForm";
 import { ManageAccessButton } from "@/components/admin/ManageAccessButton";
 import { RemoveMemberButton } from "@/components/admin/RemoveMemberButton";
+import { MemberOptionsButton } from "@/components/admin/MemberOptionsButton";
 import { DeleteDisplayLinkButton } from "@/components/admin/DeleteDisplayLinkButton";
 import { createDisplayLink } from "./actions";
 
@@ -39,9 +40,11 @@ export default async function AdminPage() {
               className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-zinc-200 p-4 dark:border-zinc-800"
             >
               <div className="flex items-center gap-3">
-                <span
-                  className="h-3 w-3 rounded-full"
-                  style={{ backgroundColor: member.color }}
+                <MemberOptionsButton
+                  userId={member.id}
+                  userName={member.name}
+                  color={member.color}
+                  photoUrl={member.photoUrl}
                 />
                 <div>
                   <p className="font-medium text-zinc-900 dark:text-zinc-50">
