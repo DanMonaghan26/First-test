@@ -73,13 +73,9 @@ export function EventPill({
             backgroundColor: `${event.ownerColor}22`,
           }}
         >
-          <span className="block truncate text-[10px] font-medium text-zinc-900 dark:text-zinc-50">
+          <span className="line-clamp-2 text-[10px] font-medium text-zinc-900 dark:text-zinc-50">
             {event.recurring ? "↻ " : ""}
             {event.title}
-          </span>
-          <span className="block truncate text-[9px] text-zinc-600 dark:text-zinc-400">
-            {event.startTime}
-            {event.endTime ? `–${event.endTime}` : ""}
           </span>
         </button>
       ) : (
