@@ -283,7 +283,7 @@ export function EventPill({
               />
             </div>
 
-            {showOwnerPicker ? (
+            {showOwnerPicker && (
               <div className="flex flex-col gap-1">
                 <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
                   In whose calendars?
@@ -322,15 +322,15 @@ export function EventPill({
                   add it to theirs — you don&apos;t need to delete and re-add it.
                 </p>
               </div>
-            ) : (
-              event.eventGroupId &&
-              event.eventGroupSize > 1 && (
-                <label className="flex items-center gap-2 text-sm text-zinc-700 dark:text-zinc-300">
-                  <input type="checkbox" name="applyToBatch" value="1" />
-                  Also apply this change to the other {event.eventGroupSize - 1} calendar
-                  {event.eventGroupSize - 1 === 1 ? "" : "s"} this was added to
-                </label>
-              )
+            )}
+
+            {event.eventGroupId && event.eventGroupSize > 1 && (
+              <label className="flex items-center gap-2 text-sm text-zinc-700 dark:text-zinc-300">
+                <input type="checkbox" name="applyToBatch" value="1" />
+                Also apply the title/time/notes changes above to the other{" "}
+                {event.eventGroupSize - 1} calendar
+                {event.eventGroupSize - 1 === 1 ? "" : "s"} this is on
+              </label>
             )}
 
             {error && <p className="text-sm text-red-600">{error}</p>}

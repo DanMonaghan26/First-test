@@ -28,7 +28,7 @@ export default async function TvDisplayPage({
 
   return (
     <div className="flex min-h-screen flex-col gap-4 bg-zinc-50 p-6 dark:bg-black">
-      <TvAutoRefresh />
+      <TvAutoRefresh token={token} />
       <h1 className="text-4xl font-semibold text-zinc-900 dark:text-zinc-50">
         {day?.label ?? "Today"}
       </h1>

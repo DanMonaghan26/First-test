@@ -218,11 +218,12 @@ export async function updateEvent(
       .filter((s) => s.id !== id && !toRemoveIds.includes(s.id))
       .map((s) => s.id);
     const toAddOwnerIds = desiredOwnerIds.filter((oid) => !currentOwnerIds.has(oid));
+    const applyToBatch = formData.get("applyToBatch") === "1";
 
     if (toRemoveIds.length > 0) {
       await prisma.event.deleteMany({ where: { id: { in: toRemoveIds } } });
     }
-    if (toUpdateIds.length > 0) {
+    if (toUpdateIds.length > 0 && applyToBatch) {
       await prisma.event.updateMany({ where: { id: { in: toUpdateIds } }, data: sharedFields });
     }
     if (toAddOwnerIds.length > 0) {
