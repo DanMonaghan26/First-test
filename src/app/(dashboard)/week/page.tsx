@@ -1,0 +1,163 @@
+import Link from "next/link";
+import { requireUser } from "@/lib/auth";
+import { getFamilyMembers, getWeekBuckets } from "@/lib/family-events";
+import { formatWeekRangeLabel, getWeekStart, shiftWeek, dateKey } from "@/lib/week";
+import { AddEventButton } from "@/components/AddEventButton";
+import { EventPill } from "@/components/EventPill";
+
+export default async function WeekPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ week?: string; mine?: string; view?: string }>;
+}) {
+  const user = await requireUser();
+  const params = await searchParams;
+
+  const weekStart = getWeekStart(params.week ?? null);
+  const showMineOnly = params.mine === "1";
+  const showTodayOnly = params.view === "today";
+
+  const [members, allBuckets] = await Promise.all([
+    getFamilyMembers(),
+    getWeekBuckets(weekStart),
+  ]);
+
+  const todayKey = dateKey(new Date());
+  const buckets = showTodayOnly
+    ? allBuckets.filter((b) => b.key === todayKey)
+    : allBuckets;
+
+  const prevWeekIso = dateKey(shiftWeek(weekStart, -1));
+  const nextWeekIso = dateKey(shiftWeek(weekStart, 1));
+  const todayIso = dateKey(getWeekStart(null));
+  const mineParam = showMineOnly ? "&mine=1" : "";
+
+  return (
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="text-xl font-semibold text-zinc-900 dark:text-zinc-50">
+            {showTodayOnly ? `Today – ${buckets[0]?.label ?? ""}` : formatWeekRangeLabel(weekStart)}
+          </h1>
+          <div className="mt-1 flex flex-wrap gap-3 text-sm">
+            <Link
+              href={`/week?week=${prevWeekIso}${mineParam}`}
+              className="text-indigo-600 hover:underline dark:text-indigo-400"
+            >
+              ← Previous week
+            </Link>
+            <Link
+              href={`/week?week=${todayIso}${mineParam}`}
+              className="text-indigo-600 hover:underline dark:text-indigo-400"
+            >
+              This week
+            </Link>
+            <Link
+              href={`/week?week=${todayIso}&view=today${mineParam}`}
+              className={
+                showTodayOnly
+                  ? "font-semibold text-indigo-600 underline dark:text-indigo-400"
+                  : "text-indigo-600 hover:underline dark:text-indigo-400"
+              }
+            >
+              Today only
+            </Link>
+            <Link
+              href={`/week?week=${nextWeekIso}${mineParam}`}
+              className="text-indigo-600 hover:underline dark:text-indigo-400"
+            >
+              Next week →
+            </Link>
+          </div>
+        </div>
+
+        <div className="flex overflow-hidden rounded-lg border border-zinc-300 text-sm dark:border-zinc-700">
+          <Link
+            href={`/week?week=${dateKey(weekStart)}${showTodayOnly ? "&view=today" : ""}`}
+            className={`px-3 py-1.5 font-medium ${
+              !showMineOnly
+                ? "bg-indigo-600 text-white"
+                : "bg-white text-zinc-600 dark:bg-zinc-950 dark:text-zinc-400"
+            }`}
+          >
+            Everyone
+          </Link>
+          <Link
+            href={`/week?week=${dateKey(weekStart)}&mine=1${showTodayOnly ? "&view=today" : ""}`}
+            className={`px-3 py-1.5 font-medium ${
+              showMineOnly
+                ? "bg-indigo-600 text-white"
+                : "bg-white text-zinc-600 dark:bg-zinc-950 dark:text-zinc-400"
+            }`}
+          >
+            Just me
+          </Link>
+        </div>
+      </div>
+
+      {members.length > 1 && (
+        <div className="flex flex-wrap gap-3">
+          {members.map((m) => (
+            <span
+              key={m.id}
+              className="flex items-center gap-1.5 text-xs text-zinc-600 dark:text-zinc-400"
+            >
+              <span
+                className="h-2.5 w-2.5 rounded-full"
+                style={{ backgroundColor: m.color }}
+              />
+              {m.name}
+            </span>
+          ))}
+        </div>
+      )}
+
+      <div
+        className={
+          showTodayOnly
+            ? "grid max-w-sm grid-cols-1 gap-4"
+            : "grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-7"
+        }
+      >
+        {buckets.map((day) => {
+          const dayEvents = showMineOnly
+            ? day.events.filter((e) => e.ownerId === user.id)
+            : day.events;
+
+          return (
+            <div
+              key={day.key}
+              className="flex flex-col gap-2 rounded-xl border border-zinc-200 bg-zinc-50/60 p-3 dark:border-zinc-800 dark:bg-zinc-950/40"
+            >
+              <h2 className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
+                {day.label}
+              </h2>
+              <div className="flex flex-col gap-2">
+                {dayEvents.map((event) => (
+                  <EventPill
+                    key={event.id}
+                    event={event}
+                    dayLabel={day.label}
+                    canEdit={user.role === "ADMIN" || event.ownerId === user.id}
+                    showOwnerName={!showMineOnly}
+                  />
+                ))}
+                {dayEvents.length === 0 && (
+                  <p className="text-xs text-zinc-400 dark:text-zinc-600">
+                    No events
+                  </p>
+                )}
+              </div>
+              <AddEventButton
+                dateIso={day.key}
+                dayLabel={day.label}
+                currentUser={{ id: user.id, role: user.role }}
+                members={members}
+              />
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}

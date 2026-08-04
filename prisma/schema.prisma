@@ -1,0 +1,64 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  ADMIN
+  MEMBER
+}
+
+enum RecurrenceType {
+  NONE
+  DAILY
+  WEEKLY
+  CUSTOM_DAYS
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         Role     @default(MEMBER)
+  color        String   @default("#6366f1")
+  createdAt    DateTime @default(now())
+
+  events        Event[] @relation("OwnedEvents")
+  createdEvents Event[] @relation("CreatedEvents")
+}
+
+model Event {
+  id        String   @id @default(cuid())
+  title     String
+  notes     String?
+  date      DateTime
+  startTime String
+  endTime   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Recurrence: date above is the series' first occurrence / anchor.
+  recurrenceType    RecurrenceType @default(NONE)
+  recurrenceDays    Int[]          @default([]) // 0=Sunday..6=Saturday, only used by CUSTOM_DAYS
+  recurrenceEndDate DateTime?
+
+  owner   User   @relation("OwnedEvents", fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId String
+
+  createdBy   User   @relation("CreatedEvents", fields: [createdById], references: [id], onDelete: Cascade)
+  createdById String
+
+  @@index([ownerId, date])
+}
+
+model DisplayToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  label     String   @default("Kitchen TV")
+  createdAt DateTime @default(now())
+}
