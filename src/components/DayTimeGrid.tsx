@@ -64,7 +64,7 @@ export function DayTimeGrid({
 
   return (
     <div className="overflow-x-auto rounded-xl border border-zinc-200 dark:border-zinc-800">
-      <div className="inline-flex min-w-full flex-col">
+      <div className="inline-flex flex-col">
         <div className="flex border-b border-zinc-200 dark:border-zinc-800">
           <div className="w-12 flex-shrink-0" />
           {members.map((member) => {

@@ -197,12 +197,21 @@ export default async function WeekPage({
                 key={day.key}
                 className="flex flex-col gap-2 rounded-xl border border-zinc-200 bg-zinc-50/60 p-3 dark:border-zinc-800 dark:bg-zinc-950/40"
               >
-                <Link
-                  href={`/week?view=today&day=${day.key}${mineParam}`}
-                  className="text-sm font-semibold text-zinc-700 hover:text-indigo-600 hover:underline dark:text-zinc-300 dark:hover:text-indigo-400"
-                >
-                  {day.label}
-                </Link>
+                <div className="flex items-center justify-between gap-2">
+                  <Link
+                    href={`/week?view=today&day=${day.key}${mineParam}`}
+                    className="text-sm font-semibold text-zinc-700 hover:text-indigo-600 hover:underline dark:text-zinc-300 dark:hover:text-indigo-400"
+                  >
+                    {day.label}
+                  </Link>
+                  <AddEventButton
+                    dateIso={day.key}
+                    dayLabel={day.label}
+                    currentUser={{ id: user.id, role: user.role }}
+                    members={members}
+                    compact
+                  />
+                </div>
                 <div className="flex flex-col gap-2">
                   {dayEvents.map((event) => (
                     <EventPill
@@ -218,12 +227,6 @@ export default async function WeekPage({
                     </p>
                   )}
                 </div>
-                <AddEventButton
-                  dateIso={day.key}
-                  dayLabel={day.label}
-                  currentUser={{ id: user.id, role: user.role }}
-                  members={members}
-                />
               </div>
             );
           })}
