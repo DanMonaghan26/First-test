@@ -1,5 +1,6 @@
 "use server";
 
+import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
@@ -80,6 +81,7 @@ export async function createEvent(
   const { ownerIds } = resolved;
 
   const setDates = formData.getAll("dates").map((v) => String(v).trim()).filter(Boolean);
+  const batchId = randomUUID();
 
   if (setDates.length > 0) {
     await prisma.event.createMany({
@@ -92,6 +94,7 @@ export async function createEvent(
           endTime: endTime || null,
           ownerId,
           createdById: user.id,
+          batchId,
         }))
       ),
     });
@@ -118,6 +121,7 @@ export async function createEvent(
       endTime: endTime || null,
       ownerId,
       createdById: user.id,
+      batchId,
       recurrenceType,
       recurrenceDays,
       recurrenceEndDate,

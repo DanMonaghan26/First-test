@@ -57,6 +57,11 @@ model Event {
   createdBy   User   @relation("CreatedEvents", fields: [createdById], references: [id], onDelete: Cascade)
   createdById String
 
+  // Shared by every row created in a single "add event" or import submission,
+  // so the whole set can be undone together. Null for legacy rows created
+  // before this field existed.
+  batchId String?
+
   // Present only for events imported from a subscribed external calendar
   // (e.g. a school calendar feed). externalUid identifies the specific
   // occurrence in that feed so re-syncing can update/remove it correctly.
@@ -66,6 +71,8 @@ model Event {
 
   @@unique([subscriptionId, externalUid])
   @@index([ownerId, date])
+  @@index([createdById, subscriptionId, createdAt])
+  @@index([batchId])
 }
 
 model DisplayToken {

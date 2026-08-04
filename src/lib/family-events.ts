@@ -97,6 +97,29 @@ export async function getFamilyMembers() {
   });
 }
 
+export type UndoableBatch = { batchId: string | null; eventId: string; title: string; count: number };
+
+// The current user's most recently created event(s), excluding anything
+// pulled in by a calendar subscription sync — only events they created
+// themselves (manually or via the text importer) are undoable.
+export async function getLastUndoableBatch(userId: string): Promise<UndoableBatch | null> {
+  const last = await prisma.event.findFirst({
+    where: { createdById: userId, subscriptionId: null },
+    orderBy: { createdAt: "desc" },
+    select: { id: true, batchId: true, title: true },
+  });
+  if (!last) return null;
+
+  if (!last.batchId) {
+    return { batchId: null, eventId: last.id, title: last.title, count: 1 };
+  }
+
+  const count = await prisma.event.count({
+    where: { batchId: last.batchId, createdById: userId },
+  });
+  return { batchId: last.batchId, eventId: last.id, title: last.title, count };
+}
+
 export async function getWeekBuckets(weekStart: Date): Promise<DayBucket[]> {
   const days = getWeekDays(weekStart);
   const rangeEnd = addDays(weekStart, 7);

@@ -1,5 +1,6 @@
 "use server";
 
+import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
@@ -97,6 +98,7 @@ async function createImportedEvents(
     }
   }
 
+  const batchId = randomUUID();
   const data = cleanRows.flatMap((row) =>
     datesInRange(row.date, row.endDate).flatMap((dateStr) =>
       row.ownerIds.map((ownerId) => ({
@@ -106,6 +108,7 @@ async function createImportedEvents(
         endTime: row.allDay ? null : row.endTime || null,
         ownerId,
         createdById: user.id,
+        batchId,
       }))
     )
   );
