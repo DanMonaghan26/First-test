@@ -1,38 +1,62 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { getFamilyMembers, getWeekBuckets } from "@/lib/family-events";
-import { formatWeekRangeLabel, getWeekStart, shiftWeek, dateKey } from "@/lib/week";
+import {
+  formatWeekRangeLabel,
+  getWeekStart,
+  shiftWeek,
+  shiftDay,
+  dateKey,
+} from "@/lib/week";
 import { AddEventButton } from "@/components/AddEventButton";
 import { EventPill } from "@/components/EventPill";
 import { DayTimeGrid } from "@/components/DayTimeGrid";
 import { HighlightTarget } from "@/components/HighlightTarget";
+import { DayPicker } from "@/components/DayPicker";
 
 export default async function WeekPage({
   searchParams,
 }: {
-  searchParams: Promise<{ week?: string; mine?: string; view?: string; highlight?: string }>;
+  searchParams: Promise<{
+    week?: string;
+    mine?: string;
+    view?: string;
+    highlight?: string;
+    day?: string;
+  }>;
 }) {
   const user = await requireUser();
   const params = await searchParams;
 
-  const weekStart = getWeekStart(params.week ?? null);
   const showMineOnly = params.mine === "1";
   const showTodayOnly = params.view === "today";
+  const mineParam = showMineOnly ? "&mine=1" : "";
 
-  const [members, allBuckets] = await Promise.all([
+  const weekStart = getWeekStart(params.week ?? null);
+  const actualTodayKey = dateKey(new Date());
+  const selectedDayKey = showTodayOnly ? params.day || actualTodayKey : actualTodayKey;
+  const dayViewWeekStart = getWeekStart(selectedDayKey);
+
+  const [members, fetchedBuckets] = await Promise.all([
     getFamilyMembers(),
-    getWeekBuckets(weekStart),
+    getWeekBuckets(showTodayOnly ? dayViewWeekStart : weekStart),
   ]);
 
-  const todayKey = dateKey(new Date());
   const buckets = showTodayOnly
-    ? allBuckets.filter((b) => b.key === todayKey)
-    : allBuckets;
+    ? fetchedBuckets.filter((b) => b.key === selectedDayKey)
+    : fetchedBuckets;
 
   const prevWeekIso = dateKey(shiftWeek(weekStart, -1));
   const nextWeekIso = dateKey(shiftWeek(weekStart, 1));
   const todayIso = dateKey(getWeekStart(null));
-  const mineParam = showMineOnly ? "&mine=1" : "";
+  const prevDayIso = dateKey(shiftDay(selectedDayKey, -1));
+  const nextDayIso = dateKey(shiftDay(selectedDayKey, 1));
+
+  const headingLabel = showTodayOnly
+    ? selectedDayKey === actualTodayKey
+      ? `Today – ${buckets[0]?.label ?? ""}`
+      : buckets[0]?.label ?? ""
+    : formatWeekRangeLabel(weekStart);
 
   return (
     <div className="flex flex-col gap-6">
@@ -40,43 +64,73 @@ export default async function WeekPage({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-semibold text-zinc-900 dark:text-zinc-50">
-            {showTodayOnly ? `Today – ${buckets[0]?.label ?? ""}` : formatWeekRangeLabel(weekStart)}
+            {headingLabel}
           </h1>
-          <div className="mt-1 flex flex-wrap gap-3 text-sm">
-            <Link
-              href={`/week?week=${prevWeekIso}${mineParam}`}
-              className="text-indigo-600 hover:underline dark:text-indigo-400"
-            >
-              ← Previous week
-            </Link>
-            <Link
-              href={`/week?week=${todayIso}${mineParam}`}
-              className="text-indigo-600 hover:underline dark:text-indigo-400"
-            >
-              This week
-            </Link>
-            <Link
-              href={`/week?week=${todayIso}&view=today${mineParam}`}
-              className={
-                showTodayOnly
-                  ? "font-semibold text-indigo-600 underline dark:text-indigo-400"
-                  : "text-indigo-600 hover:underline dark:text-indigo-400"
-              }
-            >
-              Today only
-            </Link>
-            <Link
-              href={`/week?week=${nextWeekIso}${mineParam}`}
-              className="text-indigo-600 hover:underline dark:text-indigo-400"
-            >
-              Next week →
-            </Link>
-          </div>
+          {showTodayOnly ? (
+            <div className="mt-1 flex flex-wrap items-center gap-3 text-sm">
+              <Link
+                href={`/week?view=today&day=${prevDayIso}${mineParam}`}
+                className="text-indigo-600 hover:underline dark:text-indigo-400"
+              >
+                ← Previous day
+              </Link>
+              <Link
+                href={`/week?view=today&day=${actualTodayKey}${mineParam}`}
+                className="text-indigo-600 hover:underline dark:text-indigo-400"
+              >
+                Today
+              </Link>
+              <Link
+                href={`/week?view=today&day=${nextDayIso}${mineParam}`}
+                className="text-indigo-600 hover:underline dark:text-indigo-400"
+              >
+                Next day →
+              </Link>
+              <DayPicker dayKey={selectedDayKey} mineParam={mineParam} />
+              <Link
+                href={`/week?week=${dateKey(dayViewWeekStart)}${mineParam}`}
+                className="text-indigo-600 hover:underline dark:text-indigo-400"
+              >
+                Week view
+              </Link>
+            </div>
+          ) : (
+            <div className="mt-1 flex flex-wrap gap-3 text-sm">
+              <Link
+                href={`/week?week=${prevWeekIso}${mineParam}`}
+                className="text-indigo-600 hover:underline dark:text-indigo-400"
+              >
+                ← Previous week
+              </Link>
+              <Link
+                href={`/week?week=${todayIso}${mineParam}`}
+                className="text-indigo-600 hover:underline dark:text-indigo-400"
+              >
+                This week
+              </Link>
+              <Link
+                href={`/week?view=today&day=${actualTodayKey}${mineParam}`}
+                className="text-indigo-600 hover:underline dark:text-indigo-400"
+              >
+                Today only
+              </Link>
+              <Link
+                href={`/week?week=${nextWeekIso}${mineParam}`}
+                className="text-indigo-600 hover:underline dark:text-indigo-400"
+              >
+                Next week →
+              </Link>
+            </div>
+          )}
         </div>
 
         <div className="flex overflow-hidden rounded-lg border border-zinc-300 text-sm dark:border-zinc-700">
           <Link
-            href={`/week?week=${dateKey(weekStart)}${showTodayOnly ? "&view=today" : ""}`}
+            href={
+              showTodayOnly
+                ? `/week?view=today&day=${selectedDayKey}`
+                : `/week?week=${dateKey(weekStart)}`
+            }
             className={`px-3 py-1.5 font-medium ${
               !showMineOnly
                 ? "bg-indigo-600 text-white"
@@ -86,7 +140,11 @@ export default async function WeekPage({
             Everyone
           </Link>
           <Link
-            href={`/week?week=${dateKey(weekStart)}&mine=1${showTodayOnly ? "&view=today" : ""}`}
+            href={
+              showTodayOnly
+                ? `/week?view=today&day=${selectedDayKey}&mine=1`
+                : `/week?week=${dateKey(weekStart)}&mine=1`
+            }
             className={`px-3 py-1.5 font-medium ${
               showMineOnly
                 ? "bg-indigo-600 text-white"
@@ -123,7 +181,7 @@ export default async function WeekPage({
             currentUser={{ id: user.id, role: user.role }}
           />
         ) : (
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">No data for today.</p>
+          <p className="text-sm text-zinc-500 dark:text-zinc-400">No data for this day.</p>
         )
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-7">

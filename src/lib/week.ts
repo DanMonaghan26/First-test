@@ -15,6 +15,10 @@ export function shiftWeek(weekStart: Date, delta: number): Date {
   return addWeeks(weekStart, delta);
 }
 
+export function shiftDay(dateStr: string, delta: number): Date {
+  return addDays(parseISO(dateStr), delta);
+}
+
 export function dateKey(date: Date): string {
   return format(date, "yyyy-MM-dd");
 }
