@@ -23,9 +23,12 @@ export type EventWithOwner = {
   // Sibling rows of this same event — created by expanding it across family
   // members and/or a date range — share an eventGroupId. eventGroupSize is
   // how many rows are in that group (including this one) — 1 if it wasn't
-  // expanded.
+  // expanded. groupOwnerIds is the distinct set of owners currently in the
+  // group (a group can span several dates for the same owner, so this can
+  // be shorter than eventGroupSize).
   eventGroupId: string | null;
   eventGroupSize: number;
+  groupOwnerIds: string[];
 };
 
 export type DayBucket = {
@@ -153,17 +156,22 @@ export async function getWeekBuckets(weekStart: Date): Promise<DayBucket[]> {
   const eventGroupIds = Array.from(
     new Set(events.map((e) => e.eventGroupId).filter((id): id is string => Boolean(id)))
   );
-  const eventGroupCounts =
+  const groupRows =
     eventGroupIds.length > 0
-      ? await prisma.event.groupBy({
-          by: ["eventGroupId"],
+      ? await prisma.event.findMany({
           where: { eventGroupId: { in: eventGroupIds } },
-          _count: { _all: true },
+          select: { eventGroupId: true, ownerId: true },
         })
       : [];
-  const sizeByEventGroupId = new Map(
-    eventGroupCounts.map((g) => [g.eventGroupId as string, g._count._all])
-  );
+  const sizeByEventGroupId = new Map<string, number>();
+  const ownerIdsByEventGroupId = new Map<string, string[]>();
+  for (const row of groupRows) {
+    const gid = row.eventGroupId as string;
+    sizeByEventGroupId.set(gid, (sizeByEventGroupId.get(gid) ?? 0) + 1);
+    const owners = ownerIdsByEventGroupId.get(gid) ?? [];
+    if (!owners.includes(row.ownerId)) owners.push(row.ownerId);
+    ownerIdsByEventGroupId.set(gid, owners);
+  }
 
   const buckets: DayBucket[] = days.map((date) => ({
     date,
@@ -187,6 +195,9 @@ export async function getWeekBuckets(weekStart: Date): Promise<DayBucket[]> {
         ownerColor: event.owner.color,
         eventGroupId: event.eventGroupId,
         eventGroupSize: event.eventGroupId ? (sizeByEventGroupId.get(event.eventGroupId) ?? 1) : 1,
+        groupOwnerIds: event.eventGroupId
+          ? (ownerIdsByEventGroupId.get(event.eventGroupId) ?? [event.owner.id])
+          : [event.owner.id],
         recurring: event.recurrenceType !== "NONE",
         anchorDate: dateKey(event.date),
         recurrenceType: event.recurrenceType as RecurrenceType,

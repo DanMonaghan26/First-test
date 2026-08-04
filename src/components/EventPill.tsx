@@ -18,22 +18,30 @@ const WEEKDAYS = [
 const inputClass =
   "rounded-lg border border-zinc-300 px-3 py-2 text-base dark:border-zinc-700 dark:bg-zinc-900";
 
+type FamilyMember = { id: string; name: string; color: string };
+
 export function EventPill({
   event,
   dayLabel,
   canEdit,
   variant = "list",
+  isAdmin = false,
+  members = [],
 }: {
   event: EventWithOwner;
   dayLabel: string;
   canEdit: boolean;
   variant?: "list" | "grid";
+  isAdmin?: boolean;
+  members?: FamilyMember[];
 }) {
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | undefined>();
   const [pending, startTransition] = useTransition();
   const [repeat, setRepeat] = useState(event.recurrenceType);
   const [isReminder, setIsReminder] = useState(event.isReminder);
+  const [ownerIds, setOwnerIds] = useState(event.groupOwnerIds);
+  const showOwnerPicker = isAdmin && members.length > 1;
 
   function handleSave(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -248,12 +256,54 @@ export function EventPill({
               />
             </div>
 
-            {event.eventGroupId && event.eventGroupSize > 1 && (
-              <label className="flex items-center gap-2 text-sm text-zinc-700 dark:text-zinc-300">
-                <input type="checkbox" name="applyToBatch" value="1" />
-                Also apply this change to the other {event.eventGroupSize - 1} calendar
-                {event.eventGroupSize - 1 === 1 ? "" : "s"} this was added to
-              </label>
+            {showOwnerPicker ? (
+              <div className="flex flex-col gap-1">
+                <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                  In whose calendars?
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  {members.map((m) => (
+                    <label
+                      key={m.id}
+                      className="flex items-center gap-1.5 rounded-lg border border-zinc-300 px-2.5 py-1.5 text-sm dark:border-zinc-700"
+                    >
+                      <input
+                        type="checkbox"
+                        name="ownerIds"
+                        value={m.id}
+                        checked={ownerIds.includes(m.id)}
+                        onChange={(e) => {
+                          setOwnerIds((prev) =>
+                            e.target.checked
+                              ? [...prev, m.id]
+                              : prev.filter((id) => id !== m.id)
+                          );
+                          setError(undefined);
+                        }}
+                      />
+                      <span
+                        className="h-2 w-2 rounded-full"
+                        style={{ backgroundColor: m.color }}
+                        aria-hidden="true"
+                      />
+                      {m.name}
+                    </label>
+                  ))}
+                </div>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                  Untick someone to remove this event from their calendar; tick someone new to
+                  add it to theirs — you don&apos;t need to delete and re-add it.
+                </p>
+              </div>
+            ) : (
+              event.eventGroupId &&
+              event.eventGroupSize > 1 && (
+                <label className="flex items-center gap-2 text-sm text-zinc-700 dark:text-zinc-300">
+                  <input type="checkbox" name="applyToBatch" value="1" />
+                  Also apply this change to the other {event.eventGroupSize - 1} calendar
+                  {event.eventGroupSize - 1 === 1 ? "" : "s"} this was added to
+                </label>
+              )
             )}
 
             {error && <p className="text-sm text-red-600">{error}</p>}

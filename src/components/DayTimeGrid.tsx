@@ -120,6 +120,8 @@ export function DayTimeGrid({
                       dayLabel={day.label}
                       canEdit={canEdit}
                       variant="list"
+                      isAdmin={currentUser.role === "ADMIN"}
+                      members={members}
                     />
                   ))}
                 </div>
@@ -188,6 +190,8 @@ export function DayTimeGrid({
                         dayLabel={day.label}
                         canEdit={canEdit(event.ownerId)}
                         variant="grid"
+                        isAdmin={currentUser.role === "ADMIN"}
+                        members={members}
                       />
                     </div>
                   );

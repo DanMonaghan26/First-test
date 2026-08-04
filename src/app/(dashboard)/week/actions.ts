@@ -172,43 +172,88 @@ export async function updateEvent(
     return { error: "Pick at least one day of the week to repeat on." };
   }
 
+  const sharedFields = {
+    title,
+    notes: notes || null,
+    startTime,
+    endTime: endTime || null,
+    isReminder,
+    recurrenceType,
+    recurrenceDays,
+    recurrenceEndDate,
+  };
+
   await prisma.event.update({
     where: { id },
-    data: {
-      title,
-      notes: notes || null,
-      date: parseDate(date),
-      startTime,
-      endTime: endTime || null,
-      isReminder,
-      recurrenceType,
-      recurrenceDays,
-      recurrenceEndDate,
-    },
+    data: { ...sharedFields, date: parseDate(date) },
   });
 
-  const applyToBatch = formData.get("applyToBatch") === "1";
-  if (applyToBatch && existing.eventGroupId) {
-    // Siblings keep their own date and owner — only the shared "what/when
-    // in the day/whether it repeats" fields are copied across. Members can
-    // only touch their own events; admins can touch every sibling.
-    await prisma.event.updateMany({
-      where: {
-        eventGroupId: existing.eventGroupId,
-        id: { not: id },
-        ...(user.role === "ADMIN" ? {} : { ownerId: user.id }),
-      },
-      data: {
-        title,
-        notes: notes || null,
-        startTime,
-        endTime: endTime || null,
-        isReminder,
-        recurrenceType,
-        recurrenceDays,
-        recurrenceEndDate,
-      },
-    });
+  if (user.role === "ADMIN" && formData.has("ownerIds")) {
+    // Admins can change which family members' calendars this event is in,
+    // as well as edit its shared fields — reconciled against the group's
+    // current membership (siblings keep their own date; new members get one
+    // row per date already present in the group).
+    const desiredOwnerIds = formData
+      .getAll("ownerIds")
+      .map((v) => String(v))
+      .filter(Boolean);
+    if (desiredOwnerIds.length === 0) {
+      return { error: "Please select at least one family member." };
+    }
+
+    const siblings = existing.eventGroupId
+      ? await prisma.event.findMany({ where: { eventGroupId: existing.eventGroupId } })
+      : [existing];
+    const currentOwnerIds = new Set(siblings.map((s) => s.ownerId));
+    const distinctDates = Array.from(
+      new Set(siblings.map((s) => s.date.toISOString().slice(0, 10)))
+    );
+
+    // Ownership is a whole-group membership question: removing someone
+    // drops every row they had in this group — including the row just
+    // edited, if that's the one being removed — and adding someone creates
+    // a row for them on every date already in the group.
+    const toRemoveIds = siblings.filter((s) => !desiredOwnerIds.includes(s.ownerId)).map((s) => s.id);
+    const toUpdateIds = siblings
+      .filter((s) => s.id !== id && !toRemoveIds.includes(s.id))
+      .map((s) => s.id);
+    const toAddOwnerIds = desiredOwnerIds.filter((oid) => !currentOwnerIds.has(oid));
+
+    if (toRemoveIds.length > 0) {
+      await prisma.event.deleteMany({ where: { id: { in: toRemoveIds } } });
+    }
+    if (toUpdateIds.length > 0) {
+      await prisma.event.updateMany({ where: { id: { in: toUpdateIds } }, data: sharedFields });
+    }
+    if (toAddOwnerIds.length > 0) {
+      // A legacy row with no eventGroupId yet becomes the head of a new
+      // group as soon as it needs to be shared with anyone else.
+      const eventGroupId = existing.eventGroupId ?? randomUUID();
+      if (!existing.eventGroupId && !toRemoveIds.includes(id)) {
+        await prisma.event.update({ where: { id }, data: { eventGroupId } });
+      }
+      await prisma.event.createMany({
+        data: toAddOwnerIds.flatMap((ownerId) =>
+          distinctDates.map((dateStr) => ({
+            ...sharedFields,
+            date: parseDate(dateStr),
+            ownerId,
+            createdById: user.id,
+            eventGroupId,
+          }))
+        ),
+      });
+    }
+  } else {
+    const applyToBatch = formData.get("applyToBatch") === "1";
+    if (applyToBatch && existing.eventGroupId) {
+      // Members can only bulk-edit their own sibling rows (e.g. their own
+      // event repeated across several set dates) — not other people's.
+      await prisma.event.updateMany({
+        where: { eventGroupId: existing.eventGroupId, id: { not: id }, ownerId: user.id },
+        data: sharedFields,
+      });
+    }
   }
 
   revalidatePath("/week");

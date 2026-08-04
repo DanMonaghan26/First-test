@@ -219,6 +219,8 @@ export default async function WeekPage({
                       event={event}
                       dayLabel={day.label}
                       canEdit={user.role === "ADMIN" || event.ownerId === user.id}
+                      isAdmin={user.role === "ADMIN"}
+                      members={members}
                     />
                   ))}
                   {dayEvents.length === 0 && (
