@@ -15,15 +15,30 @@ function parseDate(dateStr: string): Date {
   return new Date(`${dateStr}T12:00:00`);
 }
 
-async function resolveOwnerId(
+async function resolveOwnerIds(
   formData: FormData,
   currentUser: { id: string; role: string }
-): Promise<string> {
-  const requestedOwnerId = formData.get("ownerId");
-  if (currentUser.role === "ADMIN" && typeof requestedOwnerId === "string" && requestedOwnerId) {
-    return requestedOwnerId;
+): Promise<{ ownerIds: string[] } | { error: string }> {
+  if (currentUser.role !== "ADMIN") {
+    return { ownerIds: [currentUser.id] };
   }
-  return currentUser.id;
+
+  const requested = formData
+    .getAll("ownerIds")
+    .map((v) => String(v))
+    .filter(Boolean);
+  if (requested.length > 0) {
+    return { ownerIds: requested };
+  }
+
+  // The owner checkboxes are only rendered when there's more than one
+  // family member — if there are, an empty submission means the admin
+  // really did submit with nobody ticked.
+  const memberCount = await prisma.user.count();
+  if (memberCount > 1) {
+    return { error: "Please select at least one family member." };
+  }
+  return { ownerIds: [currentUser.id] };
 }
 
 function parseRecurrence(formData: FormData) {
@@ -58,24 +73,27 @@ export async function createEvent(
     return { error: "Please fill in a title and start time." };
   }
 
-  const ownerId = await resolveOwnerId(formData, user);
-  if (ownerId !== user.id && user.role !== "ADMIN") {
-    return { error: "You can only add events to your own calendar." };
+  const resolved = await resolveOwnerIds(formData, user);
+  if ("error" in resolved) {
+    return { error: resolved.error };
   }
+  const { ownerIds } = resolved;
 
   const setDates = formData.getAll("dates").map((v) => String(v).trim()).filter(Boolean);
 
   if (setDates.length > 0) {
     await prisma.event.createMany({
-      data: setDates.map((dateStr) => ({
-        title,
-        notes: notes || null,
-        date: parseDate(dateStr),
-        startTime,
-        endTime: endTime || null,
-        ownerId,
-        createdById: user.id,
-      })),
+      data: ownerIds.flatMap((ownerId) =>
+        setDates.map((dateStr) => ({
+          title,
+          notes: notes || null,
+          date: parseDate(dateStr),
+          startTime,
+          endTime: endTime || null,
+          ownerId,
+          createdById: user.id,
+        }))
+      ),
     });
     revalidatePath("/week");
     return undefined;
@@ -91,8 +109,8 @@ export async function createEvent(
     return { error: "Pick at least one day of the week to repeat on." };
   }
 
-  await prisma.event.create({
-    data: {
+  await prisma.event.createMany({
+    data: ownerIds.map((ownerId) => ({
       title,
       notes: notes || null,
       date: parseDate(date),
@@ -103,7 +121,7 @@ export async function createEvent(
       recurrenceType,
       recurrenceDays,
       recurrenceEndDate,
-    },
+    })),
   });
 
   revalidatePath("/week");

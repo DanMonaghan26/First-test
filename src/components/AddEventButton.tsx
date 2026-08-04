@@ -51,6 +51,15 @@ export function AddEventButton({
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
+
+    if (currentUser.role === "ADMIN" && members.length > 1) {
+      const selected = formData.getAll("ownerIds");
+      if (selected.length === 0) {
+        setError("Please select at least one family member.");
+        return;
+      }
+    }
+
     startTransition(async () => {
       const result = await createEvent(undefined, formData);
       if (result?.error) {
@@ -90,20 +99,31 @@ export function AddEventButton({
 
             {currentUser.role === "ADMIN" && members.length > 1 && (
               <div className="flex flex-col gap-1">
-                <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
                   For
-                </label>
-                <select
-                  name="ownerId"
-                  defaultValue={defaultOwnerId ?? currentUser.id}
-                  className={inputClass}
-                >
+                </span>
+                <div className="flex flex-wrap gap-2">
                   {members.map((m) => (
-                    <option key={m.id} value={m.id}>
+                    <label
+                      key={m.id}
+                      className="flex items-center gap-1.5 rounded-lg border border-zinc-300 px-2.5 py-1.5 text-sm dark:border-zinc-700"
+                    >
+                      <input
+                        type="checkbox"
+                        name="ownerIds"
+                        value={m.id}
+                        defaultChecked={m.id === (defaultOwnerId ?? currentUser.id)}
+                        onChange={() => setError(undefined)}
+                      />
+                      <span
+                        className="h-2 w-2 rounded-full"
+                        style={{ backgroundColor: m.color }}
+                        aria-hidden="true"
+                      />
                       {m.name}
-                    </option>
+                    </label>
                   ))}
-                </select>
+                </div>
               </div>
             )}
 
