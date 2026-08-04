@@ -80,9 +80,10 @@ export function EventPill({
         </button>
       ) : (
         <button
+          id={`event-${event.id}`}
           type="button"
           onClick={() => canEdit && setOpen(true)}
-          className="flex w-full items-start gap-2 rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-left text-sm shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
+          className="flex w-full items-start gap-2 rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-left text-sm shadow-sm transition-shadow dark:border-zinc-800 dark:bg-zinc-900"
         >
           <span
             className="mt-1 h-2 w-2 flex-shrink-0 rounded-full"

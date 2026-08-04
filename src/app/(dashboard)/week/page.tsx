@@ -5,11 +5,12 @@ import { formatWeekRangeLabel, getWeekStart, shiftWeek, dateKey } from "@/lib/we
 import { AddEventButton } from "@/components/AddEventButton";
 import { EventPill } from "@/components/EventPill";
 import { DayTimeGrid } from "@/components/DayTimeGrid";
+import { HighlightTarget } from "@/components/HighlightTarget";
 
 export default async function WeekPage({
   searchParams,
 }: {
-  searchParams: Promise<{ week?: string; mine?: string; view?: string }>;
+  searchParams: Promise<{ week?: string; mine?: string; view?: string; highlight?: string }>;
 }) {
   const user = await requireUser();
   const params = await searchParams;
@@ -35,6 +36,7 @@ export default async function WeekPage({
 
   return (
     <div className="flex flex-col gap-6">
+      <HighlightTarget eventId={params.highlight} />
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-semibold text-zinc-900 dark:text-zinc-50">

@@ -1,7 +1,7 @@
 import "server-only";
 import { addDays, isAfter, isBefore, isSameDay, startOfDay } from "date-fns";
 import { prisma } from "@/lib/db";
-import { dateKey, formatDayLabel, getWeekDays } from "@/lib/week";
+import { dateKey, formatDayLabel, getWeekDays, getWeekStart } from "@/lib/week";
 
 export type RecurrenceType = "NONE" | "DAILY" | "WEEKLY" | "CUSTOM_DAYS";
 
@@ -54,6 +54,40 @@ function eventOccursOn(event: RecurrenceRule, target: Date): boolean {
     case "CUSTOM_DAYS":
       return event.recurrenceDays.includes(day.getDay());
   }
+}
+
+export type SearchResult = {
+  id: string;
+  title: string;
+  ownerName: string;
+  ownerColor: string;
+  dateLabel: string;
+  weekStartIso: string;
+  startTime: string;
+  recurring: boolean;
+};
+
+export async function searchEvents(query: string): Promise<SearchResult[]> {
+  const trimmed = query.trim();
+  if (!trimmed) return [];
+
+  const events = await prisma.event.findMany({
+    where: { title: { contains: trimmed, mode: "insensitive" } },
+    orderBy: { date: "asc" },
+    take: 20,
+    include: { owner: { select: { name: true, color: true } } },
+  });
+
+  return events.map((event) => ({
+    id: event.id,
+    title: event.title,
+    ownerName: event.owner.name,
+    ownerColor: event.owner.color,
+    dateLabel: formatDayLabel(event.date),
+    weekStartIso: dateKey(getWeekStart(dateKey(event.date))),
+    startTime: event.startTime,
+    recurring: event.recurrenceType !== "NONE",
+  }));
 }
 
 export async function getFamilyMembers() {
