@@ -20,11 +20,12 @@ export type EventWithOwner = {
   recurrenceType: RecurrenceType;
   recurrenceDays: number[];
   recurrenceEndDate: string | null;
-  // Rows created together in one "add event" or import submission share a
-  // batchId. batchSize is how many rows are in that batch (including this
-  // one) — 1 for events created solo.
-  batchId: string | null;
-  batchSize: number;
+  // Sibling rows of this same event — created by expanding it across family
+  // members and/or a date range — share an eventGroupId. eventGroupSize is
+  // how many rows are in that group (including this one) — 1 if it wasn't
+  // expanded.
+  eventGroupId: string | null;
+  eventGroupSize: number;
 };
 
 export type DayBucket = {
@@ -149,19 +150,19 @@ export async function getWeekBuckets(weekStart: Date): Promise<DayBucket[]> {
     include: { owner: { select: { id: true, name: true, color: true } } },
   });
 
-  const batchIds = Array.from(
-    new Set(events.map((e) => e.batchId).filter((id): id is string => Boolean(id)))
+  const eventGroupIds = Array.from(
+    new Set(events.map((e) => e.eventGroupId).filter((id): id is string => Boolean(id)))
   );
-  const batchCounts =
-    batchIds.length > 0
+  const eventGroupCounts =
+    eventGroupIds.length > 0
       ? await prisma.event.groupBy({
-          by: ["batchId"],
-          where: { batchId: { in: batchIds } },
+          by: ["eventGroupId"],
+          where: { eventGroupId: { in: eventGroupIds } },
           _count: { _all: true },
         })
       : [];
-  const batchSizeByBatchId = new Map(
-    batchCounts.map((b) => [b.batchId as string, b._count._all])
+  const sizeByEventGroupId = new Map(
+    eventGroupCounts.map((g) => [g.eventGroupId as string, g._count._all])
   );
 
   const buckets: DayBucket[] = days.map((date) => ({
@@ -184,8 +185,8 @@ export async function getWeekBuckets(weekStart: Date): Promise<DayBucket[]> {
         ownerId: event.owner.id,
         ownerName: event.owner.name,
         ownerColor: event.owner.color,
-        batchId: event.batchId,
-        batchSize: event.batchId ? (batchSizeByBatchId.get(event.batchId) ?? 1) : 1,
+        eventGroupId: event.eventGroupId,
+        eventGroupSize: event.eventGroupId ? (sizeByEventGroupId.get(event.eventGroupId) ?? 1) : 1,
         recurring: event.recurrenceType !== "NONE",
         anchorDate: dateKey(event.date),
         recurrenceType: event.recurrenceType as RecurrenceType,

@@ -99,9 +99,15 @@ async function createImportedEvents(
     }
   }
 
+  // batchId groups the WHOLE import submission together, for undoing it all
+  // at once. eventGroupId is generated per row — narrower, grouping only the
+  // sibling rows of that one imported event (its date range x its selected
+  // family members) — used for "apply this edit to every calendar/date this
+  // event was added to."
   const batchId = randomUUID();
-  const data = cleanRows.flatMap((row) =>
-    datesInRange(row.date, row.endDate).flatMap((dateStr) =>
+  const data = cleanRows.flatMap((row) => {
+    const eventGroupId = randomUUID();
+    return datesInRange(row.date, row.endDate).flatMap((dateStr) =>
       row.ownerIds.map((ownerId) => ({
         title: row.title.trim(),
         date: new Date(`${dateStr}T12:00:00`),
@@ -111,9 +117,10 @@ async function createImportedEvents(
         ownerId,
         createdById: user.id,
         batchId,
+        eventGroupId,
       }))
-    )
-  );
+    );
+  });
 
   await prisma.event.createMany({ data });
 

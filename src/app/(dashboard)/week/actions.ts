@@ -82,7 +82,11 @@ export async function createEvent(
   const { ownerIds } = resolved;
 
   const setDates = formData.getAll("dates").map((v) => String(v).trim()).filter(Boolean);
+  // One createEvent call is always exactly one conceptual event, so batchId
+  // (undo grouping) and eventGroupId (apply-to-all grouping) are the same
+  // value here — they only diverge for the multi-event text importer.
   const batchId = randomUUID();
+  const eventGroupId = batchId;
 
   if (setDates.length > 0) {
     await prisma.event.createMany({
@@ -97,6 +101,7 @@ export async function createEvent(
           ownerId,
           createdById: user.id,
           batchId,
+          eventGroupId,
         }))
       ),
     });
@@ -125,6 +130,7 @@ export async function createEvent(
       ownerId,
       createdById: user.id,
       batchId,
+      eventGroupId,
       recurrenceType,
       recurrenceDays,
       recurrenceEndDate,
@@ -182,13 +188,13 @@ export async function updateEvent(
   });
 
   const applyToBatch = formData.get("applyToBatch") === "1";
-  if (applyToBatch && existing.batchId) {
+  if (applyToBatch && existing.eventGroupId) {
     // Siblings keep their own date and owner — only the shared "what/when
     // in the day/whether it repeats" fields are copied across. Members can
     // only touch their own events; admins can touch every sibling.
     await prisma.event.updateMany({
       where: {
-        batchId: existing.batchId,
+        eventGroupId: existing.eventGroupId,
         id: { not: id },
         ...(user.role === "ADMIN" ? {} : { ownerId: user.id }),
       },

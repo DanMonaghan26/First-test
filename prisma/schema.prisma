@@ -62,10 +62,17 @@ model Event {
   createdBy   User   @relation("CreatedEvents", fields: [createdById], references: [id], onDelete: Cascade)
   createdById String
 
-  // Shared by every row created in a single "add event" or import submission,
-  // so the whole set can be undone together. Null for legacy rows created
-  // before this field existed.
+  // Shared by every row created in a single "add event" or import submission
+  // (which can span several distinct events, e.g. a whole import), so the
+  // whole set can be undone together. Null for legacy rows.
   batchId String?
+
+  // Shared only by the sibling rows of ONE specific event — the ones created
+  // by expanding it across several family members and/or a date range.
+  // Narrower than batchId (an import submission creates many eventGroupIds,
+  // one per row). Used for "apply this edit to every calendar/date this
+  // event was added to." Null for legacy rows.
+  eventGroupId String?
 
   // Present only for events imported from a subscribed external calendar
   // (e.g. a school calendar feed). externalUid identifies the specific
@@ -78,6 +85,7 @@ model Event {
   @@index([ownerId, date])
   @@index([createdById, subscriptionId, createdAt])
   @@index([batchId])
+  @@index([eventGroupId])
 }
 
 model DisplayToken {
