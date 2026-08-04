@@ -22,12 +22,10 @@ export function EventPill({
   event,
   dayLabel,
   canEdit,
-  showOwnerName,
 }: {
   event: EventWithOwner;
   dayLabel: string;
   canEdit: boolean;
-  showOwnerName: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | undefined>();
@@ -74,14 +72,13 @@ export function EventPill({
           aria-hidden="true"
         />
         <span className="min-w-0 flex-1 overflow-hidden">
-          <span className="block break-words font-medium text-zinc-900 dark:text-zinc-50">
+          <span className="block break-words text-[6px] font-medium text-zinc-900 dark:text-zinc-50">
             {event.recurring ? "↻ " : ""}
             {event.title}
           </span>
-          <span className="block break-words text-xs text-zinc-500 dark:text-zinc-400">
+          <span className="block break-words text-[6px] text-zinc-500 dark:text-zinc-400">
             {event.startTime}
             {event.endTime ? `–${event.endTime}` : ""}
-            {showOwnerName ? ` · ${event.ownerName}` : ""}
           </span>
         </span>
       </button>
