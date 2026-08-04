@@ -42,15 +42,21 @@ export async function DisplayModeView() {
                   {memberEvents.map((event) => (
                     <div
                       key={event.id}
-                      className="rounded-lg border-l-4 bg-zinc-50 px-3 py-2 dark:bg-zinc-900"
+                      className={`rounded-lg border-l-4 px-3 py-2 ${
+                        event.isReminder
+                          ? "bg-amber-50 dark:bg-amber-950/40"
+                          : "bg-zinc-50 dark:bg-zinc-900"
+                      }`}
                       style={{ borderColor: member.color }}
                     >
                       <p className="break-words font-medium text-zinc-900 dark:text-zinc-50">
+                        {event.isReminder ? "📌 " : ""}
                         {event.title}
                       </p>
                       <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                        {event.startTime}
-                        {event.endTime ? `–${event.endTime}` : ""}
+                        {event.isReminder
+                          ? "Reminder"
+                          : `${event.startTime}${event.endTime ? `–${event.endTime}` : ""}`}
                       </p>
                     </div>
                   ))}

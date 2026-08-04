@@ -46,6 +46,11 @@ model Event {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // A reminder has no meaningful time slot — startTime is stored as "00:00"
+  // as a placeholder (unused for display) and the event is shown pinned at
+  // the top of the day instead of positioned by time.
+  isReminder Boolean @default(false)
+
   // Recurrence: date above is the series' first occurrence / anchor.
   recurrenceType    RecurrenceType @default(NONE)
   recurrenceDays    Int[]          @default([]) // 0=Sunday..6=Saturday, only used by CUSTOM_DAYS

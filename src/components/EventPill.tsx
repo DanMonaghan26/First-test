@@ -33,6 +33,7 @@ export function EventPill({
   const [error, setError] = useState<string | undefined>();
   const [pending, startTransition] = useTransition();
   const [repeat, setRepeat] = useState(event.recurrenceType);
+  const [isReminder, setIsReminder] = useState(event.isReminder);
 
   function handleSave(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -74,7 +75,7 @@ export function EventPill({
           }}
         >
           <span className="line-clamp-2 text-[10px] font-medium text-zinc-900 dark:text-zinc-50">
-            {event.recurring ? "↻ " : ""}
+            {event.isReminder ? "📌 " : event.recurring ? "↻ " : ""}
             {event.title}
           </span>
         </button>
@@ -83,7 +84,11 @@ export function EventPill({
           id={`event-${event.id}`}
           type="button"
           onClick={() => canEdit && setOpen(true)}
-          className="flex w-full items-start gap-2 rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-left text-sm shadow-sm transition-shadow dark:border-zinc-800 dark:bg-zinc-900"
+          className={`flex w-full items-start gap-2 rounded-lg border px-2.5 py-1.5 text-left text-sm shadow-sm transition-shadow ${
+            event.isReminder
+              ? "border-amber-300 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/40"
+              : "border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900"
+          }`}
         >
           <span
             className="mt-1 h-2 w-2 flex-shrink-0 rounded-full"
@@ -92,12 +97,13 @@ export function EventPill({
           />
           <span className="min-w-0 flex-1 overflow-hidden">
             <span className="block break-words text-[6px] font-medium text-zinc-900 dark:text-zinc-50">
-              {event.recurring ? "↻ " : ""}
+              {event.isReminder ? "📌 " : event.recurring ? "↻ " : ""}
               {event.title}
             </span>
             <span className="block break-words text-[6px] text-zinc-500 dark:text-zinc-400">
-              {event.startTime}
-              {event.endTime ? `–${event.endTime}` : ""}
+              {event.isReminder
+                ? "Reminder"
+                : `${event.startTime}${event.endTime ? `–${event.endTime}` : ""}`}
             </span>
           </span>
         </button>
@@ -127,31 +133,44 @@ export function EventPill({
               />
             </div>
 
-            <div className="flex gap-3">
-              <div className="flex flex-1 flex-col gap-1">
-                <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                  Start
-                </label>
-                <input
-                  type="time"
-                  name="startTime"
-                  required
-                  defaultValue={event.startTime}
-                  className={inputClass}
-                />
+            <label className="flex items-center gap-2 text-sm text-zinc-700 dark:text-zinc-300">
+              <input
+                type="checkbox"
+                name="isReminder"
+                value="1"
+                checked={isReminder}
+                onChange={(e) => setIsReminder(e.target.checked)}
+              />
+              Reminder — show at the top of the day, no specific time
+            </label>
+
+            {!isReminder && (
+              <div className="flex gap-3">
+                <div className="flex flex-1 flex-col gap-1">
+                  <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                    Start
+                  </label>
+                  <input
+                    type="time"
+                    name="startTime"
+                    required
+                    defaultValue={event.startTime}
+                    className={inputClass}
+                  />
+                </div>
+                <div className="flex flex-1 flex-col gap-1">
+                  <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                    End (optional)
+                  </label>
+                  <input
+                    type="time"
+                    name="endTime"
+                    defaultValue={event.endTime ?? ""}
+                    className={inputClass}
+                  />
+                </div>
               </div>
-              <div className="flex flex-1 flex-col gap-1">
-                <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                  End (optional)
-                </label>
-                <input
-                  type="time"
-                  name="endTime"
-                  defaultValue={event.endTime ?? ""}
-                  className={inputClass}
-                />
-              </div>
-            </div>
+            )}
 
             <div className="flex flex-col gap-1">
               <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">

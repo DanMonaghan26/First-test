@@ -11,6 +11,7 @@ export type EventWithOwner = {
   notes: string | null;
   startTime: string;
   endTime: string | null;
+  isReminder: boolean;
   ownerId: string;
   ownerName: string;
   ownerColor: string;
@@ -64,6 +65,7 @@ export type SearchResult = {
   dateLabel: string;
   weekStartIso: string;
   startTime: string;
+  isReminder: boolean;
   recurring: boolean;
 };
 
@@ -86,6 +88,7 @@ export async function searchEvents(query: string): Promise<SearchResult[]> {
     dateLabel: formatDayLabel(event.date),
     weekStartIso: dateKey(getWeekStart(dateKey(event.date))),
     startTime: event.startTime,
+    isReminder: event.isReminder,
     recurring: event.recurrenceType !== "NONE",
   }));
 }
@@ -157,6 +160,7 @@ export async function getWeekBuckets(weekStart: Date): Promise<DayBucket[]> {
         notes: event.notes,
         startTime: event.startTime,
         endTime: event.endTime,
+        isReminder: event.isReminder,
         ownerId: event.owner.id,
         ownerName: event.owner.name,
         ownerColor: event.owner.color,

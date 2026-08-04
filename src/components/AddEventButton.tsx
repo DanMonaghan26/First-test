@@ -49,6 +49,7 @@ export function AddEventButton({
   const [pending, startTransition] = useTransition();
   const [repeat, setRepeat] = useState("NONE");
   const [date, setDate] = useState(dateIso);
+  const [isReminder, setIsReminder] = useState(false);
   const [dateRows, setDateRows] = useState([{ id: "row-0", defaultValue: dateIso }]);
 
   function addDateRow() {
@@ -79,6 +80,7 @@ export function AddEventButton({
         setError(undefined);
         setOpen(false);
         setDate(dateIso);
+        setIsReminder(false);
       }
     });
   }
@@ -169,20 +171,33 @@ export function AddEventButton({
               />
             </div>
 
-            <div className="flex gap-3">
-              <div className="flex flex-1 flex-col gap-1">
-                <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                  Start
-                </label>
-                <input type="time" name="startTime" required className={inputClass} />
+            <label className="flex items-center gap-2 text-sm text-zinc-700 dark:text-zinc-300">
+              <input
+                type="checkbox"
+                name="isReminder"
+                value="1"
+                checked={isReminder}
+                onChange={(e) => setIsReminder(e.target.checked)}
+              />
+              Reminder — show at the top of the day, no specific time
+            </label>
+
+            {!isReminder && (
+              <div className="flex gap-3">
+                <div className="flex flex-1 flex-col gap-1">
+                  <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                    Start
+                  </label>
+                  <input type="time" name="startTime" required className={inputClass} />
+                </div>
+                <div className="flex flex-1 flex-col gap-1">
+                  <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                    End (optional)
+                  </label>
+                  <input type="time" name="endTime" className={inputClass} />
+                </div>
               </div>
-              <div className="flex flex-1 flex-col gap-1">
-                <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                  End (optional)
-                </label>
-                <input type="time" name="endTime" className={inputClass} />
-              </div>
-            </div>
+            )}
 
             <div className="flex flex-col gap-1">
               <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">

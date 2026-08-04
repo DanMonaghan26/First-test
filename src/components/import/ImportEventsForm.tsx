@@ -18,6 +18,7 @@ function toRow(e: ExtractedEvent, key: string, defaultOwnerIds: string[]): Row {
     date: e.date,
     endDate: e.endDate,
     allDay: e.allDay,
+    isReminder: false,
     startTime: e.startTime ?? "09:00",
     endTime: e.endTime,
     ownerIds: defaultOwnerIds,
@@ -225,12 +226,22 @@ export function ImportEventsForm({
               <label className="flex items-center gap-1.5 text-sm text-zinc-600 dark:text-zinc-400">
                 <input
                   type="checkbox"
-                  checked={row.allDay}
-                  onChange={(e) => updateRow(row.key, { allDay: e.target.checked })}
+                  checked={row.isReminder}
+                  onChange={(e) => updateRow(row.key, { isReminder: e.target.checked })}
                 />
-                All day
+                Reminder (top of the day, no specific time)
               </label>
-              {!row.allDay && (
+              {!row.isReminder && (
+                <label className="flex items-center gap-1.5 text-sm text-zinc-600 dark:text-zinc-400">
+                  <input
+                    type="checkbox"
+                    checked={row.allDay}
+                    onChange={(e) => updateRow(row.key, { allDay: e.target.checked })}
+                  />
+                  All day
+                </label>
+              )}
+              {!row.isReminder && !row.allDay && (
                 <>
                   <input
                     type="time"

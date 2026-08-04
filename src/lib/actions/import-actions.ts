@@ -34,6 +34,7 @@ export type ImportRow = {
   date: string; // YYYY-MM-DD
   endDate: string | null;
   allDay: boolean;
+  isReminder: boolean;
   startTime: string;
   endTime: string | null;
   ownerIds: string[];
@@ -104,8 +105,9 @@ async function createImportedEvents(
       row.ownerIds.map((ownerId) => ({
         title: row.title.trim(),
         date: new Date(`${dateStr}T12:00:00`),
-        startTime: row.allDay ? "00:00" : row.startTime || "00:00",
-        endTime: row.allDay ? null : row.endTime || null,
+        startTime: row.isReminder || row.allDay ? "00:00" : row.startTime || "00:00",
+        endTime: row.isReminder || row.allDay ? null : row.endTime || null,
+        isReminder: row.isReminder,
         ownerId,
         createdById: user.id,
         batchId,

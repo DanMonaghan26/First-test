@@ -27,6 +27,7 @@ function computeRange(events: DayBucket["events"]): { startHour: number; endHour
   let startHour = DEFAULT_START_HOUR;
   let endHour = DEFAULT_END_HOUR;
   for (const event of events) {
+    if (event.isReminder) continue;
     const startH = Math.floor(timeToMinutes(event.startTime) / 60);
     if (startH < startHour) startHour = startH;
     const endMinutes = event.endTime
@@ -57,6 +58,7 @@ export function DayTimeGrid({
   const nowMinutes = now.getHours() * 60 + now.getMinutes();
   const nowTop = ((nowMinutes - startHour * 60) / 60) * HOUR_HEIGHT;
   const showNowLine = isToday && nowMinutes >= startHour * 60 && nowMinutes <= endHour * 60;
+  const hasReminders = day.events.some((e) => e.isReminder);
 
   return (
     <div className="overflow-x-auto rounded-xl border border-zinc-200 dark:border-zinc-800">
@@ -95,6 +97,35 @@ export function DayTimeGrid({
           })}
         </div>
 
+        {hasReminders && (
+          <div className="flex border-b border-zinc-200 dark:border-zinc-800">
+            <div className="w-12 flex-shrink-0" />
+            {members.map((member) => {
+              const memberReminders = day.events.filter(
+                (e) => e.ownerId === member.id && e.isReminder
+              );
+              const canEdit = currentUser.role === "ADMIN" || member.id === currentUser.id;
+              return (
+                <div
+                  key={member.id}
+                  style={{ width: COLUMN_WIDTH }}
+                  className="flex flex-shrink-0 flex-col gap-1 border-l border-zinc-200 px-1 py-1 dark:border-zinc-800"
+                >
+                  {memberReminders.map((event) => (
+                    <EventPill
+                      key={event.id}
+                      event={event}
+                      dayLabel={day.label}
+                      canEdit={canEdit}
+                      variant="list"
+                    />
+                  ))}
+                </div>
+              );
+            })}
+          </div>
+        )}
+
         <div className="flex">
           <div className="relative w-12 flex-shrink-0" style={{ height: totalHeight }}>
             {hours.map((hour) => (
@@ -109,7 +140,9 @@ export function DayTimeGrid({
           </div>
 
           {members.map((member) => {
-            const memberEvents = day.events.filter((e) => e.ownerId === member.id);
+            const memberEvents = day.events.filter(
+              (e) => e.ownerId === member.id && !e.isReminder
+            );
             const canEdit = (ownerId: string) =>
               currentUser.role === "ADMIN" || ownerId === currentUser.id;
 

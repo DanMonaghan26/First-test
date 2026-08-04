@@ -74,11 +74,11 @@ export function SearchBox() {
                 />
                 <span className="min-w-0 flex-1">
                   <span className="block truncate font-medium text-zinc-900 dark:text-zinc-50">
-                    {r.recurring ? "↻ " : ""}
+                    {r.isReminder ? "📌 " : r.recurring ? "↻ " : ""}
                     {r.title}
                   </span>
                   <span className="block text-xs text-zinc-500 dark:text-zinc-400">
-                    {r.dateLabel} · {r.startTime} · {r.ownerName}
+                    {r.dateLabel} · {r.isReminder ? "Reminder" : r.startTime} · {r.ownerName}
                   </span>
                 </span>
               </Link>

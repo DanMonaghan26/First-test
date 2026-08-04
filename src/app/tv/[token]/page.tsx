@@ -59,13 +59,20 @@ export default async function TvDisplayPage({
               {day.events.map((event) => (
                 <div
                   key={event.id}
-                  className="rounded-lg border-l-4 bg-zinc-800 px-3 py-2"
+                  className={`rounded-lg border-l-4 px-3 py-2 ${
+                    event.isReminder ? "bg-amber-950/60" : "bg-zinc-800"
+                  }`}
                   style={{ borderColor: event.ownerColor }}
                 >
-                  <p className="break-words text-lg font-medium text-zinc-50">{event.title}</p>
+                  <p className="break-words text-lg font-medium text-zinc-50">
+                    {event.isReminder ? "📌 " : ""}
+                    {event.title}
+                  </p>
                   <p className="break-words text-sm text-zinc-400">
-                    {event.startTime}
-                    {event.endTime ? `–${event.endTime}` : ""} · {event.ownerName}
+                    {event.isReminder
+                      ? "Reminder"
+                      : `${event.startTime}${event.endTime ? `–${event.endTime}` : ""}`}{" "}
+                    · {event.ownerName}
                   </p>
                 </div>
               ))}

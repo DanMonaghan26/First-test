@@ -67,8 +67,9 @@ export async function createEvent(
 
   const title = String(formData.get("title") ?? "").trim();
   const notes = String(formData.get("notes") ?? "").trim();
-  const startTime = String(formData.get("startTime") ?? "");
-  const endTime = String(formData.get("endTime") ?? "").trim();
+  const isReminder = formData.get("isReminder") === "1";
+  const startTime = isReminder ? "00:00" : String(formData.get("startTime") ?? "");
+  const endTime = isReminder ? "" : String(formData.get("endTime") ?? "").trim();
 
   if (!title || !startTime) {
     return { error: "Please fill in a title and start time." };
@@ -92,6 +93,7 @@ export async function createEvent(
           date: parseDate(dateStr),
           startTime,
           endTime: endTime || null,
+          isReminder,
           ownerId,
           createdById: user.id,
           batchId,
@@ -119,6 +121,7 @@ export async function createEvent(
       date: parseDate(date),
       startTime,
       endTime: endTime || null,
+      isReminder,
       ownerId,
       createdById: user.id,
       batchId,
@@ -142,8 +145,9 @@ export async function updateEvent(
   const title = String(formData.get("title") ?? "").trim();
   const notes = String(formData.get("notes") ?? "").trim();
   const date = String(formData.get("date") ?? "");
-  const startTime = String(formData.get("startTime") ?? "");
-  const endTime = String(formData.get("endTime") ?? "").trim();
+  const isReminder = formData.get("isReminder") === "1";
+  const startTime = isReminder ? "00:00" : String(formData.get("startTime") ?? "");
+  const endTime = isReminder ? "" : String(formData.get("endTime") ?? "").trim();
 
   if (!id || !title || !date || !startTime) {
     return { error: "Please fill in a title, date, and start time." };
@@ -170,6 +174,7 @@ export async function updateEvent(
       date: parseDate(date),
       startTime,
       endTime: endTime || null,
+      isReminder,
       recurrenceType,
       recurrenceDays,
       recurrenceEndDate,
