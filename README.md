@@ -23,14 +23,22 @@ with no Node install and nothing running on your own computer:
 
 1. **Create a free Postgres database.** Sign up at
    [neon.com](https://neon.com) or [supabase.com](https://supabase.com) (both
-   have a free tier, no credit card) and create a new project. Copy its
-   connection string (it looks like `postgresql://user:password@host/dbname`).
+   have a free tier, no credit card) and create a new project. Neon gives you
+   two connection strings — a **pooled** one and a **direct** one (the pooled
+   one has `-pooler` in the hostname). Copy both; you'll need them in step 3.
+   (Supabase and most other providers only give you one — use that same value
+   for both env vars below.)
 2. **Deploy to Vercel.** Sign up at [vercel.com](https://vercel.com) (GitHub
    login works, no credit card), click **Add New → Project**, and import this
    GitHub repository.
 3. Before the first deploy, open the project's **Environment Variables**
    settings and add:
-   - `DATABASE_URL` — the connection string from step 1
+   - `DATABASE_URL` — the **pooled** connection string from step 1 (used by the
+     running app)
+   - `DIRECT_URL` — the **direct** (non-pooled) connection string from step 1
+     (used only when running database migrations — pooled/pgbouncer
+     connections don't reliably support the lock Prisma takes during
+     migrations, which causes deploys to fail with a `P1002` timeout)
    - `SESSION_SECRET` — any long random string (e.g. run `openssl rand -base64 32`
      locally, or use a password generator)
    - `COOKIE_SECURE` — `true` (Vercel serves everything over HTTPS)
@@ -46,13 +54,16 @@ Every time new commits land on this branch/PR, Vercel redeploys automatically.
 
 ```bash
 npm install
-cp .env.example .env   # then fill in DATABASE_URL and SESSION_SECRET
+cp .env.example .env   # then fill in DATABASE_URL, DIRECT_URL and SESSION_SECRET
 npx prisma migrate deploy
 npm run dev
 ```
 
 `DATABASE_URL` needs to point at a real Postgres database — either one you run
-yourself, or the same free Neon/Supabase database from above. Open
+yourself, or the same free Neon/Supabase database from above. `DIRECT_URL` is
+only used for migrations — if you're not going through a connection pooler
+(e.g. a Postgres you run yourself), just set it to the same value as
+`DATABASE_URL`. Open
 http://localhost:3000 — since there are no users yet, you'll land on a setup
 page to create the first admin account. From there, sign in and go to **Admin**
 to add the rest of the family.
@@ -95,8 +106,8 @@ npm run build
 npm start        # serves on port 3000 by default; use -p to change it
 ```
 
-Set real environment variables (`DATABASE_URL`, `SESSION_SECRET`, `COOKIE_SECURE`)
-rather than relying on `.env` in production. Leave `COOKIE_SECURE=false` for a
+Set real environment variables (`DATABASE_URL`, `DIRECT_URL`, `SESSION_SECRET`,
+`COOKIE_SECURE`) rather than relying on `.env` in production. Leave `COOKIE_SECURE=false` for a
 plain-http home-LAN setup (the TV and phones just hit `http://<local-ip>:3000`);
 set it to `true` only if this is reachable over HTTPS.
 

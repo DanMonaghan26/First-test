@@ -33,6 +33,7 @@ model User {
 
   events        Event[] @relation("OwnedEvents")
   createdEvents Event[] @relation("CreatedEvents")
+  subscriptions CalendarSubscription[]
 }
 
 model Event {
@@ -56,6 +57,14 @@ model Event {
   createdBy   User   @relation("CreatedEvents", fields: [createdById], references: [id], onDelete: Cascade)
   createdById String
 
+  // Present only for events imported from a subscribed external calendar
+  // (e.g. a school calendar feed). externalUid identifies the specific
+  // occurrence in that feed so re-syncing can update/remove it correctly.
+  subscription   CalendarSubscription? @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  subscriptionId String?
+  externalUid    String?
+
+  @@unique([subscriptionId, externalUid])
   @@index([ownerId, date])
 }
 
@@ -64,4 +73,19 @@ model DisplayToken {
   token     String   @unique
   label     String   @default("Kitchen TV")
   createdAt DateTime @default(now())
+}
+
+model CalendarSubscription {
+  id             String    @id @default(cuid())
+  url            String
+  label          String?
+  lastSyncedAt   DateTime?
+  lastSyncStatus String? // "ok" | "error"
+  lastSyncError  String?
+  createdAt      DateTime  @default(now())
+
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId String
+
+  events Event[]
 }

@@ -16,6 +16,12 @@ export function NavBar({
           <Link href="/week" className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">
             Family Planner
           </Link>
+          <Link
+            href="/subscriptions"
+            className="text-sm font-medium text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50"
+          >
+            Subscriptions
+          </Link>
           {role === "ADMIN" && (
             <Link
               href="/admin"
