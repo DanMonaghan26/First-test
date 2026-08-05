@@ -6,7 +6,6 @@ import { ManageAccessButton } from "@/components/admin/ManageAccessButton";
 import { RemoveMemberButton } from "@/components/admin/RemoveMemberButton";
 import { MemberOptionsButton } from "@/components/admin/MemberOptionsButton";
 import { DeleteDisplayLinkButton } from "@/components/admin/DeleteDisplayLinkButton";
-import { BackfillEventGroupsButton } from "@/components/admin/BackfillEventGroupsButton";
 import { createDisplayLink } from "./actions";
 
 export default async function AdminPage() {
@@ -123,21 +122,6 @@ export default async function AdminPage() {
             + Generate TV link
           </button>
         </form>
-      </div>
-
-      <div>
-        <h1 className="text-xl font-semibold text-zinc-900 dark:text-zinc-50">
-          Data cleanup
-        </h1>
-        <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-          Events added to several calendars at once before that could be edited
-          together won&apos;t have the &quot;apply to everyone&quot; options on
-          them yet. This links them up retroactively — safe to run any time,
-          including more than once.
-        </p>
-        <div className="mt-4">
-          <BackfillEventGroupsButton />
-        </div>
       </div>
     </div>
   );
