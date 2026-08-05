@@ -3,7 +3,12 @@
 import { EventPill } from "@/components/EventPill";
 import { AddEventButton } from "@/components/AddEventButton";
 import type { DayBucket } from "@/lib/family-events";
-import { computeHourRange, formatHourLabel, timeToMinutes } from "@/lib/day-time-grid";
+import {
+  computeEventLayout,
+  computeHourRange,
+  computeNowLine,
+  formatHourLabel,
+} from "@/lib/day-time-grid";
 
 const HOUR_HEIGHT = 56; // px per hour
 const COLUMN_WIDTH = 128; // px per member column
@@ -26,11 +31,12 @@ export function DayTimeGrid({
   const totalHeight = totalHours * HOUR_HEIGHT;
   const hours = Array.from({ length: totalHours + 1 }, (_, i) => startHour + i);
 
-  const now = new Date();
-  const isToday = now.toISOString().slice(0, 10) === day.key;
-  const nowMinutes = now.getHours() * 60 + now.getMinutes();
-  const nowTop = ((nowMinutes - startHour * 60) / 60) * HOUR_HEIGHT;
-  const showNowLine = isToday && nowMinutes >= startHour * 60 && nowMinutes <= endHour * 60;
+  const { show: showNowLine, positionPx: nowTop } = computeNowLine(
+    day.key,
+    startHour,
+    endHour,
+    HOUR_HEIGHT
+  );
   const hasReminders = day.events.some((e) => e.isReminder);
 
   return (
@@ -155,12 +161,12 @@ export function DayTimeGrid({
                 )}
 
                 {memberEvents.map((event) => {
-                  const startMin = timeToMinutes(event.startTime) - startHour * 60;
-                  const durationMin = event.endTime
-                    ? Math.max(timeToMinutes(event.endTime) - timeToMinutes(event.startTime), 15)
-                    : 30;
-                  const top = (startMin / 60) * HOUR_HEIGHT;
-                  const height = Math.max((durationMin / 60) * HOUR_HEIGHT, 28);
+                  const { offsetPx: top, sizePx } = computeEventLayout(
+                    event,
+                    startHour,
+                    HOUR_HEIGHT
+                  );
+                  const height = Math.max(sizePx, 28);
 
                   return (
                     <div

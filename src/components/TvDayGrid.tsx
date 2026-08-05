@@ -3,7 +3,12 @@
 import { useEffect, useRef, useState } from "react";
 import { EventPill } from "@/components/EventPill";
 import type { DayBucket } from "@/lib/family-events";
-import { computeHourRange, formatHourLabel, timeToMinutes } from "@/lib/day-time-grid";
+import {
+  computeEventLayout,
+  computeHourRange,
+  computeNowLine,
+  formatHourLabel,
+} from "@/lib/day-time-grid";
 
 const ROW_HEIGHT = 96; // px per member row
 const NAME_COL_WIDTH = 200; // px for the member name column
@@ -49,11 +54,12 @@ export function TvDayGrid({ day, members }: { day: DayBucket; members: Member[] 
   const totalWidth = totalHours * hourWidth;
   const hours = Array.from({ length: totalHours + 1 }, (_, i) => startHour + i);
 
-  const now = new Date();
-  const isToday = now.toISOString().slice(0, 10) === day.key;
-  const nowMinutes = now.getHours() * 60 + now.getMinutes();
-  const nowLeft = ((nowMinutes - startHour * 60) / 60) * hourWidth;
-  const showNowLine = isToday && nowMinutes >= startHour * 60 && nowMinutes <= endHour * 60;
+  const { show: showNowLine, positionPx: nowLeft } = computeNowLine(
+    day.key,
+    startHour,
+    endHour,
+    hourWidth
+  );
 
   return (
     <div
@@ -155,12 +161,12 @@ export function TvDayGrid({ day, members }: { day: DayBucket; members: Member[] 
                 )}
 
                 {memberEvents.map((event) => {
-                  const startMin = timeToMinutes(event.startTime) - startHour * 60;
-                  const durationMin = event.endTime
-                    ? Math.max(timeToMinutes(event.endTime) - timeToMinutes(event.startTime), 15)
-                    : 30;
-                  const left = (startMin / 60) * hourWidth;
-                  const width = Math.max((durationMin / 60) * hourWidth, 90);
+                  const { offsetPx: left, sizePx } = computeEventLayout(
+                    event,
+                    startHour,
+                    hourWidth
+                  );
+                  const width = Math.max(sizePx, 90);
 
                   return (
                     <div key={event.id} className="absolute top-2 bottom-2" style={{ left, width }}>
