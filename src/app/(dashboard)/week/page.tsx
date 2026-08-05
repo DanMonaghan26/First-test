@@ -160,18 +160,34 @@ export default async function WeekPage({
 
       {members.length > 1 && !showTodayOnly && (
         <div className="flex flex-wrap gap-3">
-          {members.map((m) => (
-            <span
-              key={m.id}
-              className="flex items-center gap-1.5 text-xs text-zinc-600 dark:text-zinc-400"
-            >
+          {members.map((m) =>
+            m.photoUrl ? (
               <span
-                className="h-2.5 w-2.5 rounded-full"
-                style={{ backgroundColor: m.color }}
-              />
-              {m.name}
-            </span>
-          ))}
+                key={m.id}
+                className="flex items-center gap-1.5 text-xs text-zinc-600 dark:text-zinc-400"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element -- base64 data URL, not something next/image can optimize */}
+                <img
+                  src={m.photoUrl}
+                  alt={m.name}
+                  className="h-4 w-4 rounded-full border object-cover"
+                  style={{ borderColor: m.color }}
+                />
+                {m.name}
+              </span>
+            ) : (
+              <span
+                key={m.id}
+                className="flex items-center gap-1.5 text-xs text-zinc-600 dark:text-zinc-400"
+              >
+                <span
+                  className="h-2.5 w-2.5 rounded-full"
+                  style={{ backgroundColor: m.color }}
+                />
+                {m.name}
+              </span>
+            )
+          )}
         </div>
       )}
 

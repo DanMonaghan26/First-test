@@ -13,7 +13,7 @@ import { useRouter } from "next/navigation";
 export function TvAutoRefresh({
   token,
   day,
-  pollMs = 8_000,
+  pollMs = 20_000,
   fallbackMs = 5 * 60_000,
 }: {
   token?: string;

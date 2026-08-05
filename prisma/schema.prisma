@@ -31,6 +31,14 @@ model User {
   color        String   @default("#6366f1")
   createdAt    DateTime @default(now())
 
+  // Basic lockout against password-guessing: counts consecutive failed
+  // sign-in attempts, resetting on success. After too many, lockedUntil is
+  // set and sign-in is refused (even with the right password) until it
+  // passes. Not used for email-only (passwordless) accounts — there's no
+  // password to guess there.
+  failedLoginAttempts Int       @default(0)
+  lockedUntil         DateTime?
+
   // A small passport-style photo, stored as a data: URL — resized/compressed
   // client-side before upload, so this stays a modest size. Shown in place
   // of the name on the TV/display views when set.

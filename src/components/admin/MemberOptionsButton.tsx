@@ -5,6 +5,7 @@ import { Modal } from "@/components/Modal";
 import { updateMemberPhoto } from "@/app/(dashboard)/admin/actions";
 
 const PHOTO_SIZE = 256; // px, square — resized/cropped client-side before upload
+const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
 export function MemberOptionsButton({
   userId,
@@ -26,6 +27,11 @@ export function MemberOptionsButton({
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      setError("Please choose a JPEG, PNG, or WebP photo.");
+      e.target.value = "";
+      return;
+    }
     setError(undefined);
 
     const reader = new FileReader();
@@ -152,7 +158,7 @@ export function MemberOptionsButton({
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/*"
+                accept="image/jpeg,image/png,image/webp"
                 onChange={handleFileChange}
                 className="hidden"
               />

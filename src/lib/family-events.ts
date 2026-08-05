@@ -113,6 +113,63 @@ export async function getFamilyMembers() {
   });
 }
 
+export type MinimalDayEvent = {
+  id: string;
+  title: string;
+  startTime: string;
+  endTime: string | null;
+  isReminder: boolean;
+  ownerId: string;
+  notes: string | null;
+};
+
+// A cheap version of getWeekBuckets for a single day, for callers (like the
+// TV/display live-refresh check) that only need to know whether that day's
+// events changed — not the full week, not eventGroupId sizes/owners, and no
+// owner join.
+export async function getMinimalEventsForDay(dayKey: string): Promise<MinimalDayEvent[]> {
+  const dayStart = startOfDay(new Date(`${dayKey}T12:00:00`));
+  const dayEnd = addDays(dayStart, 1);
+
+  const events = await prisma.event.findMany({
+    where: {
+      OR: [
+        { recurrenceType: "NONE", date: { gte: dayStart, lt: dayEnd } },
+        {
+          AND: [
+            { recurrenceType: { not: "NONE" } },
+            { date: { lt: dayEnd } },
+            { OR: [{ recurrenceEndDate: null }, { recurrenceEndDate: { gte: dayStart } }] },
+          ],
+        },
+      ],
+    },
+    select: {
+      id: true,
+      title: true,
+      startTime: true,
+      endTime: true,
+      isReminder: true,
+      ownerId: true,
+      notes: true,
+      date: true,
+      recurrenceType: true,
+      recurrenceDays: true,
+      recurrenceEndDate: true,
+    },
+  });
+
+  return events.filter((e) => eventOccursOn(e, dayStart)).map((e) => ({
+    id: e.id,
+    title: e.title,
+    startTime: e.startTime,
+    endTime: e.endTime,
+    isReminder: e.isReminder,
+    ownerId: e.ownerId,
+    notes: e.notes,
+  }));
+}
+
 export type UndoableBatch = { batchId: string | null; eventId: string; title: string; count: number };
 
 // The current user's most recently created event(s), excluding anything

@@ -136,7 +136,10 @@ export async function updateMemberPhoto(
   if (!photoDataUrl) {
     return { error: "Please choose a photo." };
   }
-  if (!photoDataUrl.startsWith("data:image/")) {
+  // The uploader always re-encodes to a JPEG client-side (via canvas), so
+  // this is the only shape a legitimate submission ever takes — anything
+  // else (e.g. an SVG data URL) is rejected outright.
+  if (!photoDataUrl.startsWith("data:image/jpeg;base64,")) {
     return { error: "That doesn't look like a photo." };
   }
   if (photoDataUrl.length > MAX_PHOTO_DATA_URL_LENGTH) {
