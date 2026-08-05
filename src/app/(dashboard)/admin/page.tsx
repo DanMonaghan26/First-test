@@ -6,6 +6,7 @@ import { ManageAccessButton } from "@/components/admin/ManageAccessButton";
 import { RemoveMemberButton } from "@/components/admin/RemoveMemberButton";
 import { MemberOptionsButton } from "@/components/admin/MemberOptionsButton";
 import { DeleteDisplayLinkButton } from "@/components/admin/DeleteDisplayLinkButton";
+import { TvTextScaleSelect } from "@/components/admin/TvTextScaleSelect";
 import { createDisplayLink } from "./actions";
 
 export default async function AdminPage() {
@@ -104,7 +105,10 @@ export default async function AdminPage() {
               <code className="break-all text-sm text-zinc-700 dark:text-zinc-300">
                 {protocol}://{host}/tv/{dt.token}
               </code>
-              <DeleteDisplayLinkButton id={dt.id} />
+              <div className="flex items-center gap-4">
+                <TvTextScaleSelect id={dt.id} textScale={dt.textScale} />
+                <DeleteDisplayLinkButton id={dt.id} />
+              </div>
             </div>
           ))}
           {displayTokens.length === 0 && (

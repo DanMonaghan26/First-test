@@ -16,6 +16,7 @@ const REMINDER_COL_WIDTH = 220; // px for the per-member reminders column, when 
 const MIN_HOUR_WIDTH = 70; // px per hour, below which times get hard to tap/read
 const MAX_HOUR_WIDTH = 140; // px per hour, above which a short day looks too spread out
 const DEFAULT_HOUR_WIDTH = 120; // used for one frame before the container is first measured
+const BASE_LABEL_FONT_PX = 28; // hour-label font size at textScale=100
 
 type Member = { id: string; name: string; color: string; photoUrl?: string | null };
 
@@ -25,7 +26,15 @@ type Member = { id: string; name: string; color: string; photoUrl?: string | nul
 // width is computed from the actual screen width so the grid always fits
 // without horizontal scrolling, whatever the day's hour range or the TV's
 // resolution.
-export function TvDayGrid({ day, members }: { day: DayBucket; members: Member[] }) {
+export function TvDayGrid({
+  day,
+  members,
+  textScale = 100,
+}: {
+  day: DayBucket;
+  members: Member[];
+  textScale?: number;
+}) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState<number | null>(null);
 
@@ -43,15 +52,29 @@ export function TvDayGrid({ day, members }: { day: DayBucket; members: Member[] 
   const hasReminders = day.events.some((e) => e.isReminder);
   const leadingColsWidth = NAME_COL_WIDTH + (hasReminders ? REMINDER_COL_WIDTH : 0);
 
+  // Hour labels are centered on their gridline, including the first and
+  // last one — that needs room either side of the hour-grid area to draw
+  // into without clipping, so EDGE_PADDING is reserved on both sides and
+  // every left-positioned element (labels, gridlines, events, now-line)
+  // is offset by it.
+  const scale = textScale / 100;
+  const labelFontPx = Math.round(BASE_LABEL_FONT_PX * scale);
+  const EDGE_PADDING = Math.ceil(labelFontPx * 1.3);
+  const headerHeight = labelFontPx + 32;
+
   const { startHour, endHour } = computeHourRange(day.events);
   const totalHours = endHour - startHour;
   const hourWidth = containerWidth
     ? Math.min(
         MAX_HOUR_WIDTH,
-        Math.max(MIN_HOUR_WIDTH, Math.floor((containerWidth - leadingColsWidth) / totalHours))
+        Math.max(
+          MIN_HOUR_WIDTH,
+          Math.floor((containerWidth - leadingColsWidth - 2 * EDGE_PADDING) / totalHours)
+        )
       )
     : DEFAULT_HOUR_WIDTH;
   const totalWidth = totalHours * hourWidth;
+  const hoursAreaWidth = totalWidth + 2 * EDGE_PADDING;
   const hours = Array.from({ length: totalHours + 1 }, (_, i) => startHour + i);
 
   const { show: showNowLine, positionPx: nowLeft } = computeNowLine(
@@ -69,20 +92,22 @@ export function TvDayGrid({ day, members }: { day: DayBucket; members: Member[] 
       <div className="flex flex-col">
         <div className="flex border-b border-zinc-200 dark:border-zinc-800">
           <div style={{ width: leadingColsWidth }} className="flex-shrink-0" />
-          <div className="relative overflow-hidden" style={{ width: totalWidth, height: 52 }}>
-            {hours.map((hour, i) => {
-              const edgeClass =
-                i === 0 ? "" : i === hours.length - 1 ? "-translate-x-full" : "-translate-x-1/2";
-              return (
-                <span
-                  key={hour}
-                  className={`absolute top-1/2 -translate-y-1/2 whitespace-nowrap text-xl text-zinc-600 dark:text-zinc-300 ${edgeClass}`}
-                  style={{ left: (hour - startHour) * hourWidth }}
-                >
-                  {formatHourLabel(hour)}
-                </span>
-              );
-            })}
+          <div
+            className="relative overflow-hidden"
+            style={{ width: hoursAreaWidth, height: headerHeight }}
+          >
+            {hours.map((hour) => (
+              <span
+                key={hour}
+                className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2 whitespace-nowrap font-medium text-zinc-900 dark:text-zinc-100"
+                style={{
+                  left: EDGE_PADDING + (hour - startHour) * hourWidth,
+                  fontSize: labelFontPx,
+                }}
+              >
+                {formatHourLabel(hour)}
+              </span>
+            ))}
           </div>
         </div>
 
@@ -144,32 +169,32 @@ export function TvDayGrid({ day, members }: { day: DayBucket; members: Member[] 
                 </div>
               )}
 
-              <div className="relative flex-shrink-0" style={{ width: totalWidth }}>
+              <div className="relative flex-shrink-0" style={{ width: hoursAreaWidth }}>
                 {hours.map((hour) => (
                   <div
                     key={hour}
-                    className="absolute top-0 bottom-0 border-l border-zinc-300 dark:border-zinc-700"
-                    style={{ left: (hour - startHour) * hourWidth }}
+                    className="absolute top-0 bottom-0 border-l border-zinc-400 dark:border-zinc-500"
+                    style={{ left: EDGE_PADDING + (hour - startHour) * hourWidth }}
                   />
                 ))}
 
                 {showNowLine && (
                   <div
                     className="absolute top-0 bottom-0 z-10 border-l-2 border-red-500"
-                    style={{ left: nowLeft }}
+                    style={{ left: EDGE_PADDING + nowLeft }}
                   />
                 )}
 
                 {memberEvents.map((event) => {
-                  const { offsetPx: left, sizePx } = computeEventLayout(
-                    event,
-                    startHour,
-                    hourWidth
-                  );
+                  const { offsetPx, sizePx } = computeEventLayout(event, startHour, hourWidth);
                   const width = Math.max(sizePx, 90);
 
                   return (
-                    <div key={event.id} className="absolute top-2 bottom-2" style={{ left, width }}>
+                    <div
+                      key={event.id}
+                      className="absolute top-2 bottom-2"
+                      style={{ left: EDGE_PADDING + offsetPx, width }}
+                    >
                       <EventPill event={event} dayLabel={day.label} canEdit={false} variant="tv" />
                     </div>
                   );

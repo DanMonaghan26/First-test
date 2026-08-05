@@ -48,7 +48,7 @@ export default async function TvDisplayPage({
       </h1>
 
       {day ? (
-        <TvDayGrid day={day} members={members} />
+        <TvDayGrid day={day} members={members} textScale={displayToken.textScale} />
       ) : (
         <p className="text-sm text-zinc-500 dark:text-zinc-400">No data for this day.</p>
       )}

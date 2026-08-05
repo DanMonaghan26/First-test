@@ -186,3 +186,14 @@ export async function deleteDisplayLink(formData: FormData): Promise<void> {
   await prisma.displayToken.delete({ where: { id } });
   revalidatePath("/admin");
 }
+
+const ALLOWED_TEXT_SCALES = [100, 125, 150, 175, 200];
+
+export async function updateDisplayTokenTextScale(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const id = String(formData.get("id") ?? "");
+  const textScale = Number(formData.get("textScale"));
+  if (!id || !ALLOWED_TEXT_SCALES.includes(textScale)) return;
+  await prisma.displayToken.update({ where: { id }, data: { textScale } });
+  revalidatePath("/admin");
+}
