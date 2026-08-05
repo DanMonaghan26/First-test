@@ -1,11 +1,15 @@
 "use client";
 
 import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 
-// Polls a cheap version endpoint frequently so the display reloads within
+// Polls a cheap version endpoint frequently so the display refreshes within
 // seconds of an event being added/edited/deleted or a family member
-// changing, plus a slower fallback reload as a safety net (e.g. to roll
-// over to the next day, or recover if a poll is ever missed).
+// changing, plus a slower fallback refresh as a safety net (e.g. to roll
+// over to the next day, or recover if a poll is ever missed). Uses
+// router.refresh() rather than a full page reload — it re-fetches the
+// server-rendered data in place, so a kiosk display sitting on a kitchen
+// wall doesn't flash white or lose its scroll position every time.
 export function TvAutoRefresh({
   token,
   day,
@@ -17,6 +21,8 @@ export function TvAutoRefresh({
   pollMs?: number;
   fallbackMs?: number;
 }) {
+  const router = useRouter();
+
   useEffect(() => {
     let lastVersion: string | null = null;
     let cancelled = false;
@@ -32,16 +38,17 @@ export function TvAutoRefresh({
         if (lastVersion === null) {
           lastVersion = version;
         } else if (version !== lastVersion && !cancelled) {
-          window.location.reload();
+          lastVersion = version;
+          router.refresh();
         }
       } catch {
         // Ignore transient network errors — the next poll or the fallback
-        // reload will pick things up.
+        // refresh will pick things up.
       }
     }
 
     const pollId = setInterval(poll, pollMs);
-    const fallbackId = setInterval(() => window.location.reload(), fallbackMs);
+    const fallbackId = setInterval(() => router.refresh(), fallbackMs);
     poll();
 
     return () => {
@@ -49,7 +56,7 @@ export function TvAutoRefresh({
       clearInterval(pollId);
       clearInterval(fallbackId);
     };
-  }, [token, day, pollMs, fallbackMs]);
+  }, [token, day, pollMs, fallbackMs, router]);
 
   return null;
 }

@@ -25,10 +25,14 @@ export type EventWithOwner = {
   // how many rows are in that group (including this one) — 1 if it wasn't
   // expanded. groupOwnerIds is the distinct set of owners currently in the
   // group (a group can span several dates for the same owner, so this can
-  // be shorter than eventGroupSize).
+  // be shorter than eventGroupSize). ownerGroupSize is how many of those
+  // rows belong to this row's own owner specifically — lets a non-admin
+  // bulk-delete just their own occurrences of a shared/multi-date event
+  // without touching anyone else's copies.
   eventGroupId: string | null;
   eventGroupSize: number;
   groupOwnerIds: string[];
+  ownerGroupSize: number;
 };
 
 export type DayBucket = {
@@ -165,12 +169,15 @@ export async function getWeekBuckets(weekStart: Date): Promise<DayBucket[]> {
       : [];
   const sizeByEventGroupId = new Map<string, number>();
   const ownerIdsByEventGroupId = new Map<string, string[]>();
+  const sizeByGroupOwner = new Map<string, number>();
   for (const row of groupRows) {
     const gid = row.eventGroupId as string;
     sizeByEventGroupId.set(gid, (sizeByEventGroupId.get(gid) ?? 0) + 1);
     const owners = ownerIdsByEventGroupId.get(gid) ?? [];
     if (!owners.includes(row.ownerId)) owners.push(row.ownerId);
     ownerIdsByEventGroupId.set(gid, owners);
+    const ownerKey = `${gid}::${row.ownerId}`;
+    sizeByGroupOwner.set(ownerKey, (sizeByGroupOwner.get(ownerKey) ?? 0) + 1);
   }
 
   const buckets: DayBucket[] = days.map((date) => ({
@@ -198,6 +205,9 @@ export async function getWeekBuckets(weekStart: Date): Promise<DayBucket[]> {
         groupOwnerIds: event.eventGroupId
           ? (ownerIdsByEventGroupId.get(event.eventGroupId) ?? [event.owner.id])
           : [event.owner.id],
+        ownerGroupSize: event.eventGroupId
+          ? (sizeByGroupOwner.get(`${event.eventGroupId}::${event.owner.id}`) ?? 1)
+          : 1,
         recurring: event.recurrenceType !== "NONE",
         anchorDate: dateKey(event.date),
         recurrenceType: event.recurrenceType as RecurrenceType,

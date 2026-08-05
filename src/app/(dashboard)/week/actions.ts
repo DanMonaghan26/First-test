@@ -273,6 +273,12 @@ export async function deleteEvent(formData: FormData): Promise<void> {
   const scope = String(formData.get("scope") ?? "");
   if (scope === "group" && existing.eventGroupId && user.role === "ADMIN") {
     await prisma.event.deleteMany({ where: { eventGroupId: existing.eventGroupId } });
+  } else if (scope === "group" && existing.eventGroupId) {
+    // Members can only bulk-delete their own copies of a shared/multi-date
+    // event — not other family members' rows in the same group.
+    await prisma.event.deleteMany({
+      where: { eventGroupId: existing.eventGroupId, ownerId: user.id },
+    });
   } else {
     await prisma.event.delete({ where: { id } });
   }

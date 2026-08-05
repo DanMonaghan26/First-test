@@ -59,7 +59,9 @@ export function EventPill({
 
   function handleDelete(scopeGroup: boolean) {
     const confirmMessage = scopeGroup
-      ? `Delete "${event.title}" for everyone? This removes it from all ${event.eventGroupSize} calendars it's on.`
+      ? canDeleteGroupAdmin
+        ? `Delete "${event.title}" for everyone? This removes it from all ${event.eventGroupSize} calendars it's on.`
+        : `Delete "${event.title}" from all ${event.ownerGroupSize} days you added it to?`
       : event.recurring
         ? `Delete "${event.title}"? This is a repeating event — deleting it removes every occurrence.`
         : `Delete "${event.title}"?`;
@@ -73,7 +75,8 @@ export function EventPill({
     });
   }
 
-  const canDeleteGroup = isAdmin && !!event.eventGroupId && event.eventGroupSize > 1;
+  const canDeleteGroupAdmin = isAdmin && !!event.eventGroupId && event.eventGroupSize > 1;
+  const canDeleteGroupMine = !isAdmin && !!event.eventGroupId && event.ownerGroupSize > 1;
   const ownerName = members.find((m) => m.id === event.ownerId)?.name ?? "this calendar";
 
   return (
@@ -350,10 +353,14 @@ export function EventPill({
                   disabled={pending}
                   className="rounded-lg border border-red-300 px-4 py-3 text-base font-semibold text-red-600 disabled:opacity-60 dark:border-red-900"
                 >
-                  {canDeleteGroup ? `Remove ${ownerName}` : "Delete"}
+                  {canDeleteGroupAdmin
+                    ? `Remove ${ownerName}`
+                    : canDeleteGroupMine
+                      ? "Delete this one"
+                      : "Delete"}
                 </button>
               </div>
-              {canDeleteGroup && (
+              {canDeleteGroupAdmin && (
                 <button
                   type="button"
                   onClick={() => handleDelete(true)}
@@ -361,6 +368,16 @@ export function EventPill({
                   className="rounded-lg border border-red-300 px-4 py-2 text-sm font-medium text-red-600 disabled:opacity-60 dark:border-red-900"
                 >
                   Delete for everyone ({event.eventGroupSize} calendars)
+                </button>
+              )}
+              {canDeleteGroupMine && (
+                <button
+                  type="button"
+                  onClick={() => handleDelete(true)}
+                  disabled={pending}
+                  className="rounded-lg border border-red-300 px-4 py-2 text-sm font-medium text-red-600 disabled:opacity-60 dark:border-red-900"
+                >
+                  Delete all {event.ownerGroupSize} of your occurrences
                 </button>
               )}
             </div>
