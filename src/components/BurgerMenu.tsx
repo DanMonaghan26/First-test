@@ -2,11 +2,12 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { undoLastEventBatch } from "@/lib/actions/undo-actions";
+import { undoLastEventBatch, restoreLastDelete } from "@/lib/actions/undo-actions";
 import { setDisplayMode } from "@/lib/actions/display-mode-actions";
+import type { UndoableAction } from "@/lib/family-events";
 
 type NavLink = { href: string; label: string };
-type Undo = { title: string; count: number } | null;
+type Undo = UndoableAction | null;
 
 export function BurgerMenu({
   links,
@@ -36,6 +37,7 @@ export function BurgerMenu({
       ? `"${undo.title}" and ${undo.count - 1} other calendar ${undo.count === 2 ? "entry" : "entries"}`
       : `"${undo.title}"`
     : "";
+  const isDelete = undo?.kind === "delete";
 
   return (
     <div className="relative" ref={containerRef}>
@@ -74,25 +76,39 @@ export function BurgerMenu({
                   <div className="my-1 border-t border-zinc-200 dark:border-zinc-800" />
                   <div className="px-4 py-2">
                     <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                      Last added: {undoLabel}
+                      {isDelete ? "Last deleted" : "Last added"}: {undoLabel}
                     </p>
-                    <form
-                      action={undoLastEventBatch}
-                      onSubmit={(e) => {
-                        if (!confirm(`Undo adding ${undoLabel}? This can't be undone.`)) {
-                          e.preventDefault();
-                        } else {
-                          setOpen(false);
-                        }
-                      }}
-                    >
-                      <button
-                        type="submit"
-                        className="mt-1 text-sm font-medium text-amber-700 hover:underline dark:text-amber-400"
+                    {isDelete ? (
+                      <form
+                        action={restoreLastDelete}
+                        onSubmit={() => setOpen(false)}
                       >
-                        Undo
-                      </button>
-                    </form>
+                        <button
+                          type="submit"
+                          className="mt-1 text-sm font-medium text-amber-700 hover:underline dark:text-amber-400"
+                        >
+                          Restore
+                        </button>
+                      </form>
+                    ) : (
+                      <form
+                        action={undoLastEventBatch}
+                        onSubmit={(e) => {
+                          if (!confirm(`Undo adding ${undoLabel}? This can't be undone.`)) {
+                            e.preventDefault();
+                          } else {
+                            setOpen(false);
+                          }
+                        }}
+                      >
+                        <button
+                          type="submit"
+                          className="mt-1 text-sm font-medium text-amber-700 hover:underline dark:text-amber-400"
+                        >
+                          Undo
+                        </button>
+                      </form>
+                    )}
                   </div>
                 </>
               )}

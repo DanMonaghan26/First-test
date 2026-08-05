@@ -160,7 +160,7 @@ export async function updateEvent(
   }
 
   const existing = await prisma.event.findUnique({ where: { id } });
-  if (!existing) {
+  if (!existing || existing.deletedAt) {
     return { error: "Event not found." };
   }
   if (existing.ownerId !== user.id && user.role !== "ADMIN") {
@@ -202,7 +202,9 @@ export async function updateEvent(
     }
 
     const siblings = existing.eventGroupId
-      ? await prisma.event.findMany({ where: { eventGroupId: existing.eventGroupId } })
+      ? await prisma.event.findMany({
+          where: { eventGroupId: existing.eventGroupId, deletedAt: null },
+        })
       : [existing];
     const currentOwnerIds = new Set(siblings.map((s) => s.ownerId));
     const distinctDates = Array.from(
@@ -251,7 +253,12 @@ export async function updateEvent(
       // Members can only bulk-edit their own sibling rows (e.g. their own
       // event repeated across several set dates) — not other people's.
       await prisma.event.updateMany({
-        where: { eventGroupId: existing.eventGroupId, id: { not: id }, ownerId: user.id },
+        where: {
+          eventGroupId: existing.eventGroupId,
+          id: { not: id },
+          ownerId: user.id,
+          deletedAt: null,
+        },
         data: sharedFields,
       });
     }
@@ -267,20 +274,32 @@ export async function deleteEvent(formData: FormData): Promise<void> {
   if (!id) return;
 
   const existing = await prisma.event.findUnique({ where: { id } });
-  if (!existing) return;
+  if (!existing || existing.deletedAt) return;
   if (existing.ownerId !== user.id && user.role !== "ADMIN") return;
 
+  // Soft delete: rows are just marked, not removed, so this action can be
+  // undone. Every row removed together here shares one deleteBatchId so
+  // they can be restored as a unit.
+  const deletedAt = new Date();
+  const deleteBatchId = randomUUID();
   const scope = String(formData.get("scope") ?? "");
   if (scope === "group" && existing.eventGroupId && user.role === "ADMIN") {
-    await prisma.event.deleteMany({ where: { eventGroupId: existing.eventGroupId } });
+    await prisma.event.updateMany({
+      where: { eventGroupId: existing.eventGroupId, deletedAt: null },
+      data: { deletedAt, deleteBatchId, deletedById: user.id },
+    });
   } else if (scope === "group" && existing.eventGroupId) {
     // Members can only bulk-delete their own copies of a shared/multi-date
     // event — not other family members' rows in the same group.
-    await prisma.event.deleteMany({
-      where: { eventGroupId: existing.eventGroupId, ownerId: user.id },
+    await prisma.event.updateMany({
+      where: { eventGroupId: existing.eventGroupId, ownerId: user.id, deletedAt: null },
+      data: { deletedAt, deleteBatchId, deletedById: user.id },
     });
   } else {
-    await prisma.event.delete({ where: { id } });
+    await prisma.event.update({
+      where: { id },
+      data: { deletedAt, deleteBatchId, deletedById: user.id },
+    });
   }
   revalidatePath("/week");
 }

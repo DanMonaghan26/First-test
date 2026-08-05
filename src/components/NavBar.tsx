@@ -3,6 +3,7 @@ import Link from "next/link";
 import { logout } from "@/lib/actions/auth-actions";
 import { SearchBox } from "@/components/SearchBox";
 import { BurgerMenu } from "@/components/BurgerMenu";
+import type { UndoableAction } from "@/lib/family-events";
 
 export function NavBar({
   name,
@@ -12,7 +13,7 @@ export function NavBar({
 }: {
   name: string;
   role: "ADMIN" | "MEMBER";
-  undo: { title: string; count: number } | null;
+  undo: UndoableAction | null;
   displayMode: boolean;
 }) {
   const links = [

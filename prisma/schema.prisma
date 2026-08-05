@@ -46,6 +46,7 @@ model User {
 
   events        Event[] @relation("OwnedEvents")
   createdEvents Event[] @relation("CreatedEvents")
+  deletedEvents Event[] @relation("DeletedEvents")
   subscriptions CalendarSubscription[]
 }
 
@@ -94,11 +95,23 @@ model Event {
   subscriptionId String?
   externalUid    String?
 
+  // Soft-delete: "deleting" an event just marks it, so it can be restored
+  // via Undo. All rows removed together in one delete action (e.g. every
+  // sibling in an eventGroupId) share a deleteBatchId, so they can be
+  // restored as a unit. A daily job permanently removes rows past their
+  // retention window (see purgeOldDeletedEvents).
+  deletedAt     DateTime?
+  deleteBatchId String?
+  deletedBy     User?     @relation("DeletedEvents", fields: [deletedById], references: [id], onDelete: SetNull)
+  deletedById   String?
+
   @@unique([subscriptionId, externalUid])
   @@index([ownerId, date])
   @@index([createdById, subscriptionId, createdAt])
   @@index([batchId])
   @@index([eventGroupId])
+  @@index([deleteBatchId])
+  @@index([deletedAt])
 }
 
 model DisplayToken {

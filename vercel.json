@@ -3,6 +3,10 @@
     {
       "path": "/api/sync-subscriptions",
       "schedule": "0 4 * * *"
+    },
+    {
+      "path": "/api/purge-deleted-events",
+      "schedule": "30 4 * * *"
     }
   ]
 }

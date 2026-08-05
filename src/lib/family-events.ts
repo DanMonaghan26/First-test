@@ -1,5 +1,5 @@
 import "server-only";
-import { addDays, isAfter, isBefore, isSameDay, startOfDay } from "date-fns";
+import { addDays, isAfter, isBefore, isSameDay, startOfDay, subDays } from "date-fns";
 import { prisma } from "@/lib/db";
 import { dateKey, formatDayLabel, getWeekDays, getWeekStart } from "@/lib/week";
 
@@ -87,7 +87,7 @@ export async function searchEvents(query: string): Promise<SearchResult[]> {
   if (!trimmed) return [];
 
   const events = await prisma.event.findMany({
-    where: { title: { contains: trimmed, mode: "insensitive" } },
+    where: { title: { contains: trimmed, mode: "insensitive" }, deletedAt: null },
     orderBy: { date: "asc" },
     take: 20,
     include: { owner: { select: { name: true, color: true } } },
@@ -133,6 +133,7 @@ export async function getMinimalEventsForDay(dayKey: string): Promise<MinimalDay
 
   const events = await prisma.event.findMany({
     where: {
+      deletedAt: null,
       OR: [
         { recurrenceType: "NONE", date: { gte: dayStart, lt: dayEnd } },
         {
@@ -170,27 +171,64 @@ export async function getMinimalEventsForDay(dayKey: string): Promise<MinimalDay
   }));
 }
 
-export type UndoableBatch = { batchId: string | null; eventId: string; title: string; count: number };
+export type UndoableAction =
+  | { kind: "add"; title: string; count: number }
+  | { kind: "delete"; title: string; count: number };
 
-// The current user's most recently created event(s), excluding anything
-// pulled in by a calendar subscription sync — only events they created
-// themselves (manually or via the text importer) are undoable.
-export async function getLastUndoableBatch(userId: string): Promise<UndoableBatch | null> {
-  const last = await prisma.event.findFirst({
-    where: { createdById: userId, subscriptionId: null },
-    orderBy: { createdAt: "desc" },
-    select: { id: true, batchId: true, title: true },
-  });
-  if (!last) return null;
+// The current user's most recent undoable action — whichever of "the last
+// thing they added" or "the last thing they deleted" happened more
+// recently. Subscription-synced events are excluded from the add side
+// (never manually created); a soft-deleted row is excluded from the add
+// side too, since there's nothing left there to undo an add of — only the
+// delete side applies to it.
+export async function getLastUndoableAction(userId: string): Promise<UndoableAction | null> {
+  const [lastAdded, lastDeleted] = await Promise.all([
+    prisma.event.findFirst({
+      where: { createdById: userId, subscriptionId: null, deletedAt: null },
+      orderBy: { createdAt: "desc" },
+      select: { batchId: true, title: true, createdAt: true },
+    }),
+    prisma.event.findFirst({
+      where: { deletedById: userId, deletedAt: { not: null } },
+      orderBy: { deletedAt: "desc" },
+      select: { deleteBatchId: true, title: true, deletedAt: true },
+    }),
+  ]);
 
-  if (!last.batchId) {
-    return { batchId: null, eventId: last.id, title: last.title, count: 1 };
+  const addTime = lastAdded?.createdAt.getTime() ?? -1;
+  const deleteTime = lastDeleted?.deletedAt?.getTime() ?? -1;
+
+  if (lastDeleted && deleteTime > addTime) {
+    const count = await prisma.event.count({
+      where: { deleteBatchId: lastDeleted.deleteBatchId, deletedById: userId },
+    });
+    return { kind: "delete", title: lastDeleted.title, count };
   }
 
-  const count = await prisma.event.count({
-    where: { batchId: last.batchId, createdById: userId },
+  if (lastAdded) {
+    const count = lastAdded.batchId
+      ? await prisma.event.count({
+          where: { batchId: lastAdded.batchId, createdById: userId, deletedAt: null },
+        })
+      : 1;
+    return { kind: "add", title: lastAdded.title, count };
+  }
+
+  return null;
+}
+
+const DELETE_RETENTION_DAYS = 7;
+
+// Permanently removes soft-deleted rows past their retention window — run
+// daily via a cron route, not on the request path. Deliberately generous
+// (a week) since noticing you need something back can take a few days on
+// a family calendar, and until purged it costs nothing but disk.
+export async function purgeOldDeletedEvents(): Promise<{ purged: number }> {
+  const cutoff = subDays(new Date(), DELETE_RETENTION_DAYS);
+  const result = await prisma.event.deleteMany({
+    where: { deletedAt: { lt: cutoff } },
   });
-  return { batchId: last.batchId, eventId: last.id, title: last.title, count };
+  return { purged: result.count };
 }
 
 export async function getWeekBuckets(weekStart: Date): Promise<DayBucket[]> {
@@ -199,6 +237,7 @@ export async function getWeekBuckets(weekStart: Date): Promise<DayBucket[]> {
 
   const events = await prisma.event.findMany({
     where: {
+      deletedAt: null,
       OR: [
         { recurrenceType: "NONE", date: { gte: days[0], lt: rangeEnd } },
         {
@@ -220,7 +259,7 @@ export async function getWeekBuckets(weekStart: Date): Promise<DayBucket[]> {
   const groupRows =
     eventGroupIds.length > 0
       ? await prisma.event.findMany({
-          where: { eventGroupId: { in: eventGroupIds } },
+          where: { eventGroupId: { in: eventGroupIds }, deletedAt: null },
           select: { eventGroupId: true, ownerId: true },
         })
       : [];

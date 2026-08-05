@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import { requireUser } from "@/lib/auth";
-import { getLastUndoableBatch } from "@/lib/family-events";
+import { getLastUndoableAction } from "@/lib/family-events";
 import { NavBar } from "@/components/NavBar";
 import { DisplayModeView } from "@/components/DisplayModeView";
 
@@ -13,14 +13,14 @@ export default async function DashboardLayout({
   const store = await cookies();
   const displayMode = store.get("displayMode")?.value === "1";
 
-  const lastBatch = displayMode ? null : await getLastUndoableBatch(user.id);
+  const lastAction = displayMode ? null : await getLastUndoableAction(user.id);
 
   return (
     <div className="flex min-h-full flex-1 flex-col bg-zinc-50 dark:bg-black">
       <NavBar
         name={user.name}
         role={user.role}
-        undo={lastBatch ? { title: lastBatch.title, count: lastBatch.count } : null}
+        undo={lastAction}
         displayMode={displayMode}
       />
       <main className="mx-auto w-full max-w-4xl flex-1 px-4 py-6">
