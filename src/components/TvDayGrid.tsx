@@ -91,6 +91,8 @@ export function TvDayGrid({ day, members }: { day: DayBucket; members: Member[] 
           return (
             <div
               key={member.id}
+              data-testid="tv-member-row"
+              data-member-name={member.name}
               className="flex border-b border-zinc-200 dark:border-zinc-800"
               style={{ minHeight: ROW_HEIGHT }}
             >

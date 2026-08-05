@@ -80,6 +80,21 @@ Put the result in `.env` as `SESSION_SECRET`. Anyone with this value can forge
 login sessions, so keep it private and use a different one in production than
 in development.
 
+### Running the automated tests
+
+```bash
+npm run test:e2e
+```
+
+Covers the trickiest logic — event-group ownership editing/deleting,
+recurrence, and the TV kiosk's day navigation/reminders layout. Needs
+`DATABASE_URL` pointing at a migrated Postgres database (`npx prisma migrate
+deploy`); **the suite wipes that database's tables before every run**, so
+always point it at a throwaway/test database, never one with real family
+data. It starts `next dev` on port 3100 automatically — pass
+`PW_BASE_URL=http://localhost:PORT` instead to run against a server you've
+already started (e.g. after `npm run build && npm start`).
+
 ## Using it day to day
 
 - **`/week`** — sign in here on your phone or laptop. Add events/notes to your own
@@ -134,4 +149,5 @@ src/app/(dashboard)/week    Personal + whole-family weekly view
 src/app/(dashboard)/admin   Family member management + TV link generation
 src/app/tv/[token]          Kitchen TV kiosk display (no auth)
 src/proxy.ts                Redirects signed-out users away from protected pages
+tests/                      Playwright end-to-end tests (npm run test:e2e)
 ```
