@@ -11,7 +11,9 @@ import {
 } from "@/lib/day-time-grid";
 
 const ROW_HEIGHT = 96; // px per member row
-const NAME_COL_WIDTH = 200; // px for the member name column
+const PHOTO_SIZE = ROW_HEIGHT - 16; // px — fills the row height inside its py-2 padding
+const NAME_COL_WIDTH_TEXT = 200; // px for the member name column, when showing name text
+const NAME_COL_WIDTH_PHOTO = PHOTO_SIZE + 24; // px — snug fit around the photo (px-3 padding)
 const REMINDER_COL_WIDTH = 220; // px for the per-member reminders column, when shown
 const MIN_HOUR_WIDTH = 70; // px per hour, below which times get hard to tap/read
 const MAX_HOUR_WIDTH = 140; // px per hour, above which a short day looks too spread out
@@ -50,7 +52,12 @@ export function TvDayGrid({
   }, []);
 
   const hasReminders = day.events.some((e) => e.isReminder);
-  const leadingColsWidth = NAME_COL_WIDTH + (hasReminders ? REMINDER_COL_WIDTH : 0);
+  // Members without a photo fall back to a dot + name, which needs more
+  // room than a photo does — only shrink the column to the tight photo fit
+  // once every member actually has one.
+  const allHavePhotos = members.every((m) => m.photoUrl);
+  const nameColWidth = allHavePhotos ? NAME_COL_WIDTH_PHOTO : NAME_COL_WIDTH_TEXT;
+  const leadingColsWidth = nameColWidth + (hasReminders ? REMINDER_COL_WIDTH : 0);
 
   // Hour labels are centered on their gridline, including the first and
   // last one — that needs room either side of the hour-grid area to draw
@@ -128,7 +135,7 @@ export function TvDayGrid({
               style={{ minHeight: ROW_HEIGHT }}
             >
               <div
-                style={{ width: NAME_COL_WIDTH }}
+                style={{ width: nameColWidth }}
                 className="flex flex-shrink-0 items-center gap-2 px-3 py-2"
               >
                 {member.photoUrl ? (
@@ -136,7 +143,7 @@ export function TvDayGrid({
                   <img
                     src={member.photoUrl}
                     alt={member.name}
-                    className="h-12 w-12 flex-shrink-0 rounded-full border-2 object-cover"
+                    className="h-20 w-20 flex-shrink-0 rounded-full border-2 object-cover"
                     style={{ borderColor: member.color }}
                   />
                 ) : (
