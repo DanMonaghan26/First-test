@@ -1,6 +1,6 @@
 "use server";
 
-import { randomBytes } from "node:crypto";
+import { randomBytes, randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
 import { requireAdmin, hashPassword } from "@/lib/auth";
@@ -182,4 +182,50 @@ export async function deleteDisplayLink(formData: FormData): Promise<void> {
   if (!id) return;
   await prisma.displayToken.delete({ where: { id } });
   revalidatePath("/admin");
+}
+
+// One-time cleanup for events added before eventGroupId existed (it shipped
+// after batchId — anything imported or multi-added before that only has
+// batchId, which groups a whole import/submission together rather than just
+// one event's siblings, so it can't drive "edit/delete for everyone"). This
+// reconstructs eventGroupId for those older rows by grouping same-batch rows
+// that share a title/time/reminder-flag — the same identity the importer
+// itself now uses to decide what counts as "one event" expanded across
+// people and dates. Safe to run more than once — already-grouped rows are
+// left alone.
+export async function backfillEventGroups(): Promise<{ fixed: number }> {
+  await requireAdmin();
+
+  const orphans = await prisma.event.findMany({
+    where: { eventGroupId: null, batchId: { not: null } },
+    select: {
+      id: true,
+      batchId: true,
+      title: true,
+      startTime: true,
+      endTime: true,
+      isReminder: true,
+    },
+  });
+
+  const groups = new Map<string, string[]>();
+  for (const e of orphans) {
+    const key = `${e.batchId}::${e.title}::${e.startTime}::${e.endTime ?? ""}::${e.isReminder}`;
+    const ids = groups.get(key) ?? [];
+    ids.push(e.id);
+    groups.set(key, ids);
+  }
+
+  let fixed = 0;
+  for (const ids of groups.values()) {
+    if (ids.length < 2) continue;
+    await prisma.event.updateMany({
+      where: { id: { in: ids } },
+      data: { eventGroupId: randomUUID() },
+    });
+    fixed += ids.length;
+  }
+
+  revalidatePath("/week");
+  return { fixed };
 }
