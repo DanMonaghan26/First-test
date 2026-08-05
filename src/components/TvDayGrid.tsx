@@ -69,14 +69,14 @@ export function TvDayGrid({ day, members }: { day: DayBucket; members: Member[] 
       <div className="flex flex-col">
         <div className="flex border-b border-zinc-200 dark:border-zinc-800">
           <div style={{ width: leadingColsWidth }} className="flex-shrink-0" />
-          <div className="relative overflow-hidden" style={{ width: totalWidth, height: 44 }}>
+          <div className="relative overflow-hidden" style={{ width: totalWidth, height: 52 }}>
             {hours.map((hour, i) => {
               const edgeClass =
                 i === 0 ? "" : i === hours.length - 1 ? "-translate-x-full" : "-translate-x-1/2";
               return (
                 <span
                   key={hour}
-                  className={`absolute top-1/2 -translate-y-1/2 whitespace-nowrap text-base text-zinc-400 dark:text-zinc-600 ${edgeClass}`}
+                  className={`absolute top-1/2 -translate-y-1/2 whitespace-nowrap text-xl text-zinc-600 dark:text-zinc-300 ${edgeClass}`}
                   style={{ left: (hour - startHour) * hourWidth }}
                 >
                   {formatHourLabel(hour)}
@@ -148,7 +148,7 @@ export function TvDayGrid({ day, members }: { day: DayBucket; members: Member[] 
                 {hours.map((hour) => (
                   <div
                     key={hour}
-                    className="absolute top-0 bottom-0 border-l border-zinc-100 dark:border-zinc-900"
+                    className="absolute top-0 bottom-0 border-l border-zinc-300 dark:border-zinc-700"
                     style={{ left: (hour - startHour) * hourWidth }}
                   />
                 ))}
