@@ -43,7 +43,10 @@ export function TvDatePicker({
   }
 
   function pick(date: Date) {
-    router.push(`/tv/${token}?day=${format(date, "yyyy-MM-dd")}`);
+    // pinned=1 opts this out of the kiosk's 30-second auto-revert-to-today
+    // — picking a date here is a deliberate choice to look at that day, not
+    // a quick tap like the prev/next arrows.
+    router.push(`/tv/${token}?day=${format(date, "yyyy-MM-dd")}&pinned=1`);
     setOpen(false);
   }
 

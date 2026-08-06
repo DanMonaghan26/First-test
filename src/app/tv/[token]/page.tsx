@@ -13,10 +13,10 @@ export default async function TvDisplayPage({
   searchParams,
 }: {
   params: Promise<{ token: string }>;
-  searchParams: Promise<{ day?: string }>;
+  searchParams: Promise<{ day?: string; pinned?: string }>;
 }) {
   const { token } = await params;
-  const { day: dayParam } = await searchParams;
+  const { day: dayParam, pinned } = await searchParams;
 
   const displayToken = await prisma.displayToken.findUnique({ where: { token } });
   if (!displayToken) {
@@ -42,6 +42,7 @@ export default async function TvDisplayPage({
         todayKey={todayKey}
         prevDayIso={prevDayIso}
         nextDayIso={nextDayIso}
+        pinned={pinned === "1"}
       />
       <h1 className="text-4xl font-semibold text-zinc-900 dark:text-zinc-50">
         {day?.label ?? "Today"}

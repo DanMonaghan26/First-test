@@ -152,6 +152,26 @@ test.describe.serial("TV kiosk", () => {
     await expect(tvPage).toHaveURL(new RegExp(`day=${tomorrow}`));
     await expect(tvPage.locator("text=Tomorrow-only event")).toBeVisible();
     await expect(tvPage.locator("text=Back to today")).toBeVisible();
+    // A date picked from the calendar is a deliberate choice, not a quick
+    // peek — it should opt out of the kiosk's auto-revert-to-today timer.
+    await expect(tvPage).toHaveURL(/pinned=1/);
+    await tvPage.close();
+  });
+
+  test("the prev/next arrows don't pin the day (they still auto-revert)", async ({ page }) => {
+    await login(page, DAN.email, DAN.password);
+    await page.goto("/admin");
+    const codeText = await page.locator("code").first().innerText();
+    const tvHref = "/" + codeText.split("/").slice(-2).join("/");
+
+    const tvPage = await page.context().newPage();
+    await tvPage.setViewportSize({ width: 1920, height: 1080 });
+    await tvPage.goto(tvHref);
+    await tvPage.waitForTimeout(500);
+
+    await tvPage.click('a[aria-label="Next day"]');
+    await tvPage.waitForTimeout(500);
+    expect(tvPage.url()).not.toContain("pinned=1");
     await tvPage.close();
   });
 });

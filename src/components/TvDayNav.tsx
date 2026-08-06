@@ -5,9 +5,12 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { TvDatePicker } from "@/components/TvDatePicker";
 
-// If someone flips to a different day on the kiosk (e.g. checking tomorrow
-// on the way past), it snaps back to today on its own after a bit — nobody
-// has to remember to reset it, and it won't get stuck showing the wrong day.
+// A quick peek at another day via the arrows (e.g. checking tomorrow on the
+// way past) snaps back to today on its own after a bit — nobody has to
+// remember to reset it, and it won't get stuck showing the wrong day.
+// Deliberately picking a date from the calendar opts out of this (see
+// `pinned`) — that's a considered choice to look at a specific day, not a
+// quick tap, and shouldn't get yanked away after 30 seconds.
 const AUTO_REVERT_MS = 30_000;
 
 export function TvDayNav({
@@ -16,21 +19,23 @@ export function TvDayNav({
   todayKey,
   prevDayIso,
   nextDayIso,
+  pinned,
 }: {
   token: string;
   selectedDayKey: string;
   todayKey: string;
   prevDayIso: string;
   nextDayIso: string;
+  pinned: boolean;
 }) {
   const router = useRouter();
   const isToday = selectedDayKey === todayKey;
 
   useEffect(() => {
-    if (isToday) return;
+    if (isToday || pinned) return;
     const id = setTimeout(() => router.push(`/tv/${token}`), AUTO_REVERT_MS);
     return () => clearTimeout(id);
-  }, [isToday, token, router]);
+  }, [isToday, pinned, token, router]);
 
   return (
     <>
