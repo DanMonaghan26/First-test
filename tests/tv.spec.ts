@@ -117,4 +117,31 @@ test.describe.serial("TV kiosk", () => {
     await expect(tvPage.locator("text=Back to today")).toHaveCount(0);
     await tvPage.close();
   });
+
+  test("picking a date jumps straight to that day", async ({ page }) => {
+    await login(page, DAN.email, DAN.password);
+    await page.goto("/admin");
+    const codeText = await page.locator("code").first().innerText();
+    const tvHref = "/" + codeText.split("/").slice(-2).join("/");
+
+    const tvPage = await page.context().newPage();
+    await tvPage.setViewportSize({ width: 1920, height: 1080 });
+    await tvPage.goto(tvHref);
+    await tvPage.waitForTimeout(500);
+
+    const tomorrow = await tvPage.evaluate(() => {
+      const d = new Date();
+      d.setDate(d.getDate() + 1);
+      return d.toISOString().slice(0, 10);
+    });
+    await expect(tvPage.locator("text=Tomorrow-only event")).toHaveCount(0);
+
+    await tvPage.fill('input[aria-label="Pick a date"]', tomorrow);
+    await tvPage.waitForTimeout(500);
+
+    await expect(tvPage).toHaveURL(new RegExp(`day=${tomorrow}`));
+    await expect(tvPage.locator("text=Tomorrow-only event")).toBeVisible();
+    await expect(tvPage.locator("text=Back to today")).toBeVisible();
+    await tvPage.close();
+  });
 });
