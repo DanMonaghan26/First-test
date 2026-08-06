@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { TvDatePicker } from "@/components/TvDatePicker";
 
 // If someone flips to a different day on the kiosk (e.g. checking tomorrow
 // on the way past), it snaps back to today on its own after a bit — nobody
@@ -47,16 +48,7 @@ export function TvDayNav({
       >
         ›
       </Link>
-      <input
-        type="date"
-        defaultValue={selectedDayKey}
-        onChange={(e) => {
-          if (!e.target.value) return;
-          router.push(`/tv/${token}?day=${e.target.value}`);
-        }}
-        aria-label="Pick a date"
-        className="fixed right-4 top-4 z-20 h-14 rounded-full border-0 bg-zinc-900/10 px-4 text-lg font-medium text-zinc-600 outline-none transition-colors hover:bg-zinc-900/20 dark:bg-white/10 dark:text-zinc-300 dark:hover:bg-white/20 [&::-webkit-calendar-picker-indicator]:h-6 [&::-webkit-calendar-picker-indicator]:w-6 [&::-webkit-calendar-picker-indicator]:cursor-pointer dark:[&::-webkit-calendar-picker-indicator]:invert"
-      />
+      <TvDatePicker token={token} selectedDayKey={selectedDayKey} todayKey={todayKey} />
       {!isToday && (
         <Link
           href={`/tv/${token}`}

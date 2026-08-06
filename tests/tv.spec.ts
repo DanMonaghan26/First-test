@@ -129,14 +129,24 @@ test.describe.serial("TV kiosk", () => {
     await tvPage.goto(tvHref);
     await tvPage.waitForTimeout(500);
 
-    const tomorrow = await tvPage.evaluate(() => {
-      const d = new Date();
+    const { tomorrow, monthChanged } = await tvPage.evaluate(() => {
+      const now = new Date();
+      const d = new Date(now);
       d.setDate(d.getDate() + 1);
-      return d.toISOString().slice(0, 10);
+      return {
+        tomorrow: d.toISOString().slice(0, 10),
+        monthChanged: d.getMonth() !== now.getMonth(),
+      };
     });
     await expect(tvPage.locator("text=Tomorrow-only event")).toHaveCount(0);
 
-    await tvPage.fill('input[aria-label="Pick a date"]', tomorrow);
+    await tvPage.click('button[aria-label="Pick a date"]');
+    await tvPage.waitForTimeout(300);
+    if (monthChanged) {
+      await tvPage.click('button[aria-label="Next month"]');
+      await tvPage.waitForTimeout(300);
+    }
+    await tvPage.click(`[data-testid="tv-calendar-day"][data-date="${tomorrow}"]`);
     await tvPage.waitForTimeout(500);
 
     await expect(tvPage).toHaveURL(new RegExp(`day=${tomorrow}`));
