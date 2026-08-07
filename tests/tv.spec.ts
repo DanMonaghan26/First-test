@@ -104,17 +104,17 @@ test.describe.serial("TV kiosk", () => {
     await tvPage.waitForTimeout(500);
 
     await expect(tvPage.locator("text=Tomorrow-only event")).toHaveCount(0);
-    await expect(tvPage.locator("text=Back to today")).toHaveCount(0);
+    await expect(tvPage.locator('a:text("Today")')).toHaveCount(0);
 
     await tvPage.click('a[aria-label="Next day"]');
     await tvPage.waitForTimeout(500);
     await expect(tvPage.locator("text=Tomorrow-only event")).toBeVisible();
-    await expect(tvPage.locator("text=Back to today")).toBeVisible();
+    await expect(tvPage.locator('a:text("Today")')).toBeVisible();
 
-    await tvPage.click("text=Back to today");
+    await tvPage.click('a:text("Today")');
     await tvPage.waitForTimeout(500);
     await expect(tvPage.locator("text=Tomorrow-only event")).toHaveCount(0);
-    await expect(tvPage.locator("text=Back to today")).toHaveCount(0);
+    await expect(tvPage.locator('a:text("Today")')).toHaveCount(0);
     await tvPage.close();
   });
 
@@ -151,7 +151,7 @@ test.describe.serial("TV kiosk", () => {
 
     await expect(tvPage).toHaveURL(new RegExp(`day=${tomorrow}`));
     await expect(tvPage.locator("text=Tomorrow-only event")).toBeVisible();
-    await expect(tvPage.locator("text=Back to today")).toBeVisible();
+    await expect(tvPage.locator('a:text("Today")')).toBeVisible();
     // A date picked from the calendar is a deliberate choice, not a quick
     // peek — it should opt out of the kiosk's auto-revert-to-today timer.
     await expect(tvPage).toHaveURL(/pinned=1/);

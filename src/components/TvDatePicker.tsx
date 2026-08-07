@@ -60,7 +60,7 @@ export function TvDatePicker({
         type="button"
         onClick={openPicker}
         aria-label="Pick a date"
-        className="fixed right-4 top-4 z-20 flex h-14 items-center gap-2 rounded-full bg-zinc-900/10 px-4 text-lg font-medium text-zinc-600 transition-colors hover:bg-zinc-900/20 dark:bg-white/10 dark:text-zinc-300 dark:hover:bg-white/20"
+        className="flex h-14 items-center gap-2 rounded-full bg-zinc-900/10 px-4 text-lg font-medium text-zinc-600 transition-colors hover:bg-zinc-900/20 dark:bg-white/10 dark:text-zinc-300 dark:hover:bg-white/20"
       >
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
           <rect x="3" y="5" width="18" height="16" rx="2" />
@@ -71,13 +71,13 @@ export function TvDatePicker({
         {selectedLabel}
       </button>
 
+      {/* Anchored right under the nav cluster rather than centered on
+          screen — picking a date shouldn't mean dragging the cursor all
+          the way across the TV to reach the popup. */}
       {open && (
-        <div
-          className="fixed inset-0 z-30 flex items-center justify-center bg-black/50"
-          onClick={() => setOpen(false)}
-        >
+        <div className="fixed inset-0 z-30 bg-black/40" onClick={() => setOpen(false)}>
           <div
-            className="w-[460px] rounded-2xl bg-white p-6 shadow-2xl dark:bg-zinc-900"
+            className="absolute right-4 top-20 w-[420px] rounded-2xl bg-white p-6 shadow-2xl dark:bg-zinc-900"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between">
