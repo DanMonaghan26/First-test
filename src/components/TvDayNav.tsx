@@ -42,16 +42,14 @@ export function TvDayNav({
 
   // Everything the remote's cursor needs for day navigation lives in one
   // corner, so hopping between "previous day" and "pick a date" (say) is a
-  // short nudge, not a trip across the whole screen.
+  // short nudge, not a trip across the whole screen. Today goes FIRST in
+  // this right-anchored row, not last — since the row grows/shrinks from
+  // its right edge, an item appearing/disappearing at the front only makes
+  // room to its own left and never shifts the arrows or date picker after
+  // it. Putting it last would instead push every other button sideways
+  // each time it showed up or went away.
   return (
     <div className="fixed right-4 top-4 z-20 flex items-center gap-2">
-      <Link href={`/tv/${token}?day=${prevDayIso}`} aria-label="Previous day" className={NAV_BUTTON_CLASS}>
-        ‹
-      </Link>
-      <Link href={`/tv/${token}?day=${nextDayIso}`} aria-label="Next day" className={NAV_BUTTON_CLASS}>
-        ›
-      </Link>
-      <TvDatePicker token={token} selectedDayKey={selectedDayKey} todayKey={todayKey} />
       {!isToday && (
         <Link
           href={`/tv/${token}`}
@@ -60,6 +58,13 @@ export function TvDayNav({
           Today
         </Link>
       )}
+      <Link href={`/tv/${token}?day=${prevDayIso}`} aria-label="Previous day" className={NAV_BUTTON_CLASS}>
+        ‹
+      </Link>
+      <Link href={`/tv/${token}?day=${nextDayIso}`} aria-label="Next day" className={NAV_BUTTON_CLASS}>
+        ›
+      </Link>
+      <TvDatePicker token={token} selectedDayKey={selectedDayKey} todayKey={todayKey} />
     </div>
   );
 }
