@@ -20,6 +20,7 @@ export function ManageAccessButton({
 }) {
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | undefined>();
+  const [warning, setWarning] = useState<string | undefined>();
   const [pending, startTransition] = useTransition();
   const [requiresPassword, setRequiresPassword] = useState(currentlyRequiresPassword);
 
@@ -30,8 +31,13 @@ export function ManageAccessButton({
       const result = await updateMemberAccess(undefined, formData);
       if (result?.error) {
         setError(result.error);
+        setWarning(undefined);
+      } else if (result?.warning) {
+        setError(undefined);
+        setWarning(result.warning);
       } else {
         setError(undefined);
+        setWarning(undefined);
         setOpen(false);
       }
     });
@@ -102,6 +108,7 @@ export function ManageAccessButton({
             )}
 
             {error && <p className="text-sm text-red-600">{error}</p>}
+            {warning && <p className="text-sm text-amber-700 dark:text-amber-400">{warning}</p>}
             <button
               type="submit"
               disabled={pending}

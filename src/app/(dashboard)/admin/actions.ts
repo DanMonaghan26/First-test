@@ -5,8 +5,10 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
 import { requireAdmin, hashPassword } from "@/lib/auth";
 import { RAINBOW_COLORS } from "@/lib/colors";
+import { sendInviteEmail } from "@/lib/email";
+import { getBaseUrl } from "@/lib/url";
 
-export type ActionState = { error?: string } | undefined;
+export type ActionState = { error?: string; warning?: string } | undefined;
 
 function isValidColor(color: string): boolean {
   return RAINBOW_COLORS.some((c) => c.value === color);
@@ -39,6 +41,7 @@ export async function addMember(
 
   let email: string | null = null;
   let passwordHash: string | null = null;
+  let plainPassword: string | null = null;
 
   if (sendInvite) {
     email = String(formData.get("email") ?? "")
@@ -59,6 +62,7 @@ export async function addMember(
       if (password.length < 8) {
         return { error: "Password must be at least 8 characters." };
       }
+      plainPassword = password;
       passwordHash = await hashPassword(password);
     }
   }
@@ -69,6 +73,22 @@ export async function addMember(
 
   revalidatePath("/admin");
   revalidatePath("/week");
+
+  if (email) {
+    const baseUrl = await getBaseUrl();
+    const result = await sendInviteEmail({
+      to: email,
+      name,
+      loginUrl: `${baseUrl}/login`,
+      password: plainPassword,
+    });
+    if (!result.ok) {
+      return {
+        warning: `${name} was added, but the invite email couldn't be sent (${result.error}). Share their login details directly instead.`,
+      };
+    }
+  }
+
   return undefined;
 }
 
@@ -104,9 +124,26 @@ export async function updateMemberAccess(
     passwordHash = await hashPassword(password);
   }
 
-  await prisma.user.update({ where: { id: userId }, data: { email, passwordHash } });
+  const updated = await prisma.user.update({
+    where: { id: userId },
+    data: { email, passwordHash },
+  });
 
   revalidatePath("/admin");
+
+  const baseUrl = await getBaseUrl();
+  const result = await sendInviteEmail({
+    to: email,
+    name: updated.name,
+    loginUrl: `${baseUrl}/login`,
+    password: requiresPassword ? password : null,
+  });
+  if (!result.ok) {
+    return {
+      warning: `Login details saved, but the email couldn't be sent (${result.error}). Share their login details directly instead.`,
+    };
+  }
+
   return undefined;
 }
 

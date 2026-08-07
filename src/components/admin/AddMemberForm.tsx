@@ -19,7 +19,7 @@ export function AddMemberForm({ usedColors }: { usedColors: string[] }) {
   const allTaken = RAINBOW_COLORS.every((c) => usedColors.includes(c.value));
 
   useEffect(() => {
-    if (wasPending.current && !pending && !state?.error) {
+    if (wasPending.current && !pending && !state?.error && !state?.warning) {
       setOpen(false);
       setSendInvite(false);
       setRequiresPassword(true);
@@ -155,6 +155,9 @@ export function AddMemberForm({ usedColors }: { usedColors: string[] }) {
       </div>
 
       {state?.error && <p className="text-sm text-red-600">{state.error}</p>}
+      {state?.warning && (
+        <p className="text-sm text-amber-700 dark:text-amber-400">{state.warning}</p>
+      )}
 
       <div className="flex gap-3">
         <button

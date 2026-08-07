@@ -1,6 +1,6 @@
-import { headers } from "next/headers";
 import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { getBaseUrl } from "@/lib/url";
 import { AddMemberForm } from "@/components/admin/AddMemberForm";
 import { ManageAccessButton } from "@/components/admin/ManageAccessButton";
 import { RemoveMemberButton } from "@/components/admin/RemoveMemberButton";
@@ -12,17 +12,13 @@ import { createDisplayLink } from "./actions";
 export default async function AdminPage() {
   const admin = await requireAdmin();
 
-  const [members, displayTokens, headersList] = await Promise.all([
+  const [members, displayTokens, baseUrl] = await Promise.all([
     prisma.user.findMany({ orderBy: { createdAt: "asc" } }),
     prisma.displayToken.findMany({ orderBy: { createdAt: "asc" } }),
-    headers(),
+    getBaseUrl(),
   ]);
 
   const usedColors = members.map((m) => m.color);
-  const host = headersList.get("host") ?? "localhost:3000";
-  const protocol =
-    headersList.get("x-forwarded-proto") ??
-    (process.env.COOKIE_SECURE === "true" ? "https" : "http");
 
   return (
     <div className="flex flex-col gap-10">
@@ -103,7 +99,7 @@ export default async function AdminPage() {
               className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-zinc-200 p-4 dark:border-zinc-800"
             >
               <code className="break-all text-sm text-zinc-700 dark:text-zinc-300">
-                {protocol}://{host}/tv/{dt.token}
+                {baseUrl}/tv/{dt.token}
               </code>
               <div className="flex items-center gap-4">
                 <TvTextScaleSelect id={dt.id} textScale={dt.textScale} />

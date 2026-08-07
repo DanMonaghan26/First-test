@@ -44,6 +44,9 @@ with no Node install and nothing running on your own computer:
    - `COOKIE_SECURE` — `true` (Vercel serves everything over HTTPS)
    - `ANTHROPIC_API_KEY` — optional, only needed for the "Import from text" page (see
      below). Get one from [console.anthropic.com](https://console.anthropic.com/settings/keys).
+   - `RESEND_API_KEY` and `RESEND_FROM_EMAIL` — optional, only needed to actually
+     email family members their login details (see below). Without these, "Send
+     invite" still creates the login, it just doesn't email anyone.
 4. Click **Deploy**. Vercel installs dependencies, applies the database schema
    (`prisma migrate deploy` runs as part of the build), and gives you a URL
    like `https://your-app.vercel.app`.
@@ -108,7 +111,10 @@ already started (e.g. after `npm run build && npm start`).
   for you to review, edit, and choose which family member's calendar to add them to. Needs
   `ANTHROPIC_API_KEY` set (see above) — the page says so if it isn't.
 - **`/admin`** — add/remove family members, reset passwords, and generate the TV
-  display link. Only visible to admins.
+  display link. Only visible to admins. "Send invite" / "Manage login" creates
+  the login either way; it only emails the person their details if
+  `RESEND_API_KEY` is set (see above) — otherwise you'll see a note to share
+  the details yourself.
 - **`/tv/[token]`** — the kitchen TV view. Go to Admin → "Generate TV link", open
   the resulting URL once in the Samsung TV's built-in web browser, and leave the
   tab open. It has no login and refreshes itself every minute. Because it needs no
