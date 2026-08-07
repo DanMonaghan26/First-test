@@ -108,7 +108,7 @@ export async function searchEvents(query: string): Promise<SearchResult[]> {
 
 export async function getFamilyMembers() {
   return prisma.user.findMany({
-    orderBy: { createdAt: "asc" },
+    orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
     select: { id: true, name: true, color: true, role: true, photoUrl: true },
   });
 }

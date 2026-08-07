@@ -67,8 +67,11 @@ export async function addMember(
     }
   }
 
+  const maxOrder = await prisma.user.aggregate({ _max: { sortOrder: true } });
+  const sortOrder = (maxOrder._max.sortOrder ?? -1) + 1;
+
   await prisma.user.create({
-    data: { name, email, passwordHash, role, color },
+    data: { name, email, passwordHash, role, color, sortOrder },
   });
 
   revalidatePath("/admin");
@@ -205,6 +208,33 @@ export async function removeMember(formData: FormData): Promise<void> {
   }
 
   await prisma.user.delete({ where: { id: userId } });
+  revalidatePath("/admin");
+  revalidatePath("/week");
+}
+
+export async function moveMember(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const userId = String(formData.get("userId") ?? "");
+  const direction = String(formData.get("direction") ?? "");
+  if (!userId || (direction !== "up" && direction !== "down")) return;
+
+  const members = await prisma.user.findMany({
+    orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+    select: { id: true, sortOrder: true },
+  });
+  const index = members.findIndex((m) => m.id === userId);
+  if (index === -1) return;
+
+  const swapIndex = direction === "up" ? index - 1 : index + 1;
+  if (swapIndex < 0 || swapIndex >= members.length) return;
+
+  const current = members[index];
+  const neighbor = members[swapIndex];
+  await prisma.$transaction([
+    prisma.user.update({ where: { id: current.id }, data: { sortOrder: neighbor.sortOrder } }),
+    prisma.user.update({ where: { id: neighbor.id }, data: { sortOrder: current.sortOrder } }),
+  ]);
+
   revalidatePath("/admin");
   revalidatePath("/week");
 }

@@ -44,6 +44,11 @@ model User {
   // of the name on the TV/display views when set.
   photoUrl String?
 
+  // Display order everywhere the family is listed (admin, /week, TV) —
+  // admin-adjustable via move up/down, independent of when someone was
+  // added. New members default to the end of the list.
+  sortOrder Int @default(0)
+
   events        Event[] @relation("OwnedEvents")
   createdEvents Event[] @relation("CreatedEvents")
   deletedEvents Event[] @relation("DeletedEvents")

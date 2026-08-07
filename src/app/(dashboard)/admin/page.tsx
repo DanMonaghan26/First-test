@@ -7,13 +7,13 @@ import { RemoveMemberButton } from "@/components/admin/RemoveMemberButton";
 import { MemberOptionsButton } from "@/components/admin/MemberOptionsButton";
 import { DeleteDisplayLinkButton } from "@/components/admin/DeleteDisplayLinkButton";
 import { TvTextScaleSelect } from "@/components/admin/TvTextScaleSelect";
-import { createDisplayLink } from "./actions";
+import { createDisplayLink, moveMember } from "./actions";
 
 export default async function AdminPage() {
   const admin = await requireAdmin();
 
   const [members, displayTokens, baseUrl] = await Promise.all([
-    prisma.user.findMany({ orderBy: { createdAt: "asc" } }),
+    prisma.user.findMany({ orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] }),
     prisma.displayToken.findMany({ orderBy: { createdAt: "asc" } }),
     getBaseUrl(),
   ]);
@@ -31,12 +31,40 @@ export default async function AdminPage() {
         </p>
 
         <div className="mt-4 flex flex-col gap-3">
-          {members.map((member) => (
+          {members.map((member, index) => (
             <div
               key={member.id}
+              data-testid="admin-member-row"
+              data-member-name={member.name}
               className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-zinc-200 p-4 dark:border-zinc-800"
             >
               <div className="flex items-center gap-3">
+                <div className="flex flex-col">
+                  <form action={moveMember}>
+                    <input type="hidden" name="userId" value={member.id} />
+                    <input type="hidden" name="direction" value="up" />
+                    <button
+                      type="submit"
+                      disabled={index === 0}
+                      aria-label={`Move ${member.name} up`}
+                      className="flex h-5 w-5 items-center justify-center text-zinc-400 hover:text-zinc-700 disabled:opacity-25 disabled:hover:text-zinc-400 dark:text-zinc-500 dark:hover:text-zinc-200 dark:disabled:hover:text-zinc-500"
+                    >
+                      ▲
+                    </button>
+                  </form>
+                  <form action={moveMember}>
+                    <input type="hidden" name="userId" value={member.id} />
+                    <input type="hidden" name="direction" value="down" />
+                    <button
+                      type="submit"
+                      disabled={index === members.length - 1}
+                      aria-label={`Move ${member.name} down`}
+                      className="flex h-5 w-5 items-center justify-center text-zinc-400 hover:text-zinc-700 disabled:opacity-25 disabled:hover:text-zinc-400 dark:text-zinc-500 dark:hover:text-zinc-200 dark:disabled:hover:text-zinc-500"
+                    >
+                      ▼
+                    </button>
+                  </form>
+                </div>
                 <MemberOptionsButton
                   userId={member.id}
                   userName={member.name}

@@ -164,6 +164,8 @@ export default async function WeekPage({
             m.photoUrl ? (
               <span
                 key={m.id}
+                data-testid="week-member-legend"
+                data-member-name={m.name}
                 className="flex items-center gap-1.5 text-xs text-zinc-600 dark:text-zinc-400"
               >
                 {/* eslint-disable-next-line @next/next/no-img-element -- base64 data URL, not something next/image can optimize */}
@@ -178,6 +180,8 @@ export default async function WeekPage({
             ) : (
               <span
                 key={m.id}
+                data-testid="week-member-legend"
+                data-member-name={m.name}
                 className="flex items-center gap-1.5 text-xs text-zinc-600 dark:text-zinc-400"
               >
                 <span
